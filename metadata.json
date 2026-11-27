@@ -1,0 +1,8 @@
+{
+  "name": "Portal Koreksi & Penilaian LKPD Multi-Folder",
+  "description": "Portal otomatisasi koreksi rubrik, penjelasan kesalahan, dan rekapitulasi nilai LKPD multi-tab Google Docs & Google Drive berbasis AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

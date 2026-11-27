@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detektif Perubahan Zat - MTsN 15 Jakarta</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              teal: '#0f766e',
+              darkTeal: '#064e3b',
+              gold: '#f59e0b',
+              amber: '#d97706',
+              navy: '#0f172a',
+              emerald: '#059669',
+              lightGreen: '#ecfdf5',
+              accentYellow: '#fde047'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #0f766e 100%);
+      min-height: 100vh;
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #1e293b;
+    }
+
+    .glass-dark {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .detective-badge {
+      box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4);
+    }
+
+    .card-flip {
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+
+    .btn-bounce:hover {
+      transform: translateY(-2px);
+    }
+    .btn-bounce:active {
+      transform: translateY(1px);
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    .pulse-animation {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+  <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-700/60 sticky top-0 z-50 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 bg-gradient-to-tr from-amber-500 to-yellow-300 rounded-2xl flex items-center justify-center text-slate-900 font-extrabold text-xl shadow-lg shadow-amber-500/20">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="bg-amber-400/20 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-amber-400/30">
+              MTsN 15 JAKARTA
+            </span>
+            <span class="text-slate-400 text-xs hidden sm:inline">| Guru: Ema Rachmawati, M.Pd</span>
+          </div>
+          <h1 class="text-lg font-bold text-white tracking-tight">
+            Detektif Perubahan Zat <span class="text-amber-400 text-sm font-normal">(IPA Kelas VII)</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Mode Selector & Controls -->
+      <div class="flex items-center gap-2 bg-slate-800/90 p-1.5 rounded-xl border border-slate-700/80 text-sm">
+        <button id="btnModeClass" onclick="switchMode('class')" class="px-3 py-1.5 rounded-lg font-bold transition-all bg-emerald-600 text-white shadow-md">
+          <i class="fa-solid fa-users-gear mr-1.5"></i> Mode Kelas (Guru)
+        </button>
+        <button id="btnModeStudent" onclick="switchMode('student')" class="px-3 py-1.5 rounded-lg font-bold transition-all text-slate-300 hover:text-white">
+          <i class="fa-solid fa-user-pen mr-1.5"></i> Mode Latihan Mandiri
+        </button>
+        <button onclick="openModal('modalAyat')" class="p-1.5 px-2.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 rounded-lg font-semibold transition border border-amber-500/30" title="Tadabbur QS. Al-Baqarah: 164">
+          <i class="fa-solid fa-book-quran text-base"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+    <div class="glass-dark rounded-2xl p-4 border border-slate-700/60 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <div class="bg-teal-500/20 p-3 rounded-xl border border-teal-500/30 text-teal-300">
+          <i class="fa-solid fa-folder-open text-2xl"></i>
+        </div>
+        <div>
+          <span class="text-xs text-teal-300 font-bold uppercase tracking-wider">Progress Kasus TKP</span>
+          <div class="flex items-baseline gap-2">
+            <span id="currentCardIndexText" class="text-2xl font-extrabold text-white">TKP 1</span>
+            <span class="text-slate-400 font-semibold text-sm">dari 12 Kasus</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full md:flex-1 max-w-md">
+        <div class="flex justify-between text-xs text-slate-300 mb-1 font-semibold">
+          <span>Kelengkapan Penyelidikan</span>
+          <span id="progressPercentText">8%</span>
+        </div>
+        <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden p-0.5 border border-slate-700">
+          <div id="progressBar" class="bg-gradient-to-r from-teal-400 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: 8.33%;"></div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button onclick="resetGame()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition border border-slate-700">
+          <i class="fa-solid fa-rotate-right mr-1"></i> Reset Game
+        </button>
+        <button onclick="openModal('modalRecap')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 rounded-xl text-xs font-bold transition border border-slate-700">
+          <i class="fa-solid fa-list-check mr-1"></i> Rekap Peristiwa
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN GAME AREA: Split Layout for Card vs Scoreboard -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <div class="lg:col-span-8 flex flex-col gap-6">
+        
+        <!-- TKP Card Wrapper -->
+        <div id="tkpCardContainer" class="glass-card rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden border-2 border-emerald-500/20">
+          
+          <!-- Card Header / Badge -->
+          <div class="flex items-center justify-between border-b border-slate-200/80 pb-4 mb-6">
+            <div class="flex items-center gap-3">
+              <span class="bg-amber-500 text-slate-900 font-extrabold text-xs px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-shield-halved"></i> LOKASI TKP #<span id="tkpNumberDisplay">01</span>
+              </span>
+              <span id="cardCategoryTag" class="hidden text-xs font-bold px-3 py-1 rounded-full border"></span>
+            </div>
+
+            <!-- Timer Display (Classroom Mode) -->
+            <div id="timerContainer" class="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl">
+              <i class="fa-regular fa-clock text-amber-600 animate-pulse text-lg"></i>
+              <span id="timerText" class="font-extrabold text-amber-800 text-lg">15s</span>
+              <button onclick="startTimer()" class="ml-1 text-xs bg-amber-200 hover:bg-amber-300 text-amber-900 px-2 py-0.5 rounded font-bold transition">
+                Mulai
+              </button>
+            </div>
+          </div>
+
+          <!-- TKP Case Content -->
+          <div class="flex flex-col md:flex-row items-center gap-6 my-2">
+            <!-- Detective Icon / Visual Graphic -->
+            <div class="w-28 h-28 md:w-36 md:h-36 shrink-0 bg-gradient-to-br from-teal-600 to-emerald-800 rounded-2xl flex items-center justify-center text-white text-5xl md:text-6xl shadow-xl border-4 border-white/80 relative">
+              <i id="tkpIcon" class="fa-solid fa-ice-cream"></i>
+              <div class="absolute -bottom-2 -right-2 bg-amber-400 text-slate-900 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md">
+                ?
+              </div>
+            </div>
+
+            <div class="flex-grow text-center md:text-left">
+              <span class="text-xs font-bold text-teal-700 uppercase tracking-widest">PERISTIWA YANG DIAMATI</span>
+              <h2 id="tkpTitle" class="text-2xl md:text-3xl font-extrabold text-slate-900 mt-1 mb-3 leading-tight">
+                Es Krim Mencair Di Bawah Terik Matahari
+              </h2>
+              <p id="tkpQuestion" class="text-slate-600 text-sm md:text-base leading-relaxed">
+                Apakah peristiwa perubahan zat pada benda ini termasuk ke dalam <b class="text-teal-800">Perubahan Fisika</b> atau <b class="text-emerald-800">Perubahan Kimia</b>?
+              </p>
+            </div>
+          </div>
+
+          <!-- CLASSROOM MODE: Reveal Answer Button & Controls -->
+          <div id="classControlsArea" class="mt-8 pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <button id="btnRevealAnswer" onclick="revealAnswer()" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 font-extrabold rounded-2xl shadow-lg shadow-amber-500/25 btn-bounce flex items-center justify-center gap-2 text-base">
+              <i class="fa-solid fa-key"></i> Buka Jawaban Kunci TKP
+            </button>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button onclick="prevCard()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition text-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-chevron-left"></i> SEBELUMNYA
+              </button>
+              <button onclick="nextCard()" class="px-5 py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl shadow-md transition text-sm flex items-center gap-1.5">
+                LANJUT <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STUDENT MODE: Direct Choice Buttons -->
+          <div id="studentChoiceArea" class="hidden mt-8 pt-6 border-t border-slate-200/80 grid grid-cols-2 gap-4">
+            <button onclick="studentAnswer('Fisika')" class="py-4 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-2xl shadow-lg shadow-teal-600/20 btn-bounce text-lg flex items-center justify-center gap-2">
+              <i class="fa-solid fa-cube"></i> PERUBAHAN FISIKA
+            </button>
+            <button onclick="studentAnswer('Kimia')" class="py-4 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded-2xl shadow-lg shadow-emerald-700/20 btn-bounce text-lg flex items-center justify-center gap-2">
+              <i class="fa-solid fa-flask-vial"></i> PERUBAHAN KIMIA
+            </button>
+          </div>
+
+          <!-- ANSWER EXPLANATION PANEL (Revealed after decision) -->
+          <div id="answerPanel" class="hidden mt-6 bg-gradient-to-br from-slate-900 to-teal-950 text-white rounded-2xl p-6 border-2 border-amber-400/40 shadow-2xl relative">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span id="answerBadge" class="px-3 py-1 rounded-lg text-xs font-black tracking-wider uppercase bg-amber-400 text-slate-900">
+                  HASIL ANALISIS TKP
+                </span>
+                <span id="correctAnswerText" class="text-xl font-black text-amber-300">
+                  PERUBAHAN FISIKA
+                </span>
+              </div>
+              <span class="text-xs text-teal-300 bg-teal-900/60 px-2.5 py-1 rounded-md font-mono">
+                <i class="fa-solid fa-magnifying-glass-chart"></i> Bukti Ilmiah
+              </span>
+            </div>
+
+            <p id="answerExplanation" class="text-slate-200 text-sm md:text-base leading-relaxed mb-4">
+              Es krim mencair hanya mengalami perubahan wujud dari padat menjadi cair. Tidak ada zat baru yang terbentuk dan molekul dasarnya tetap sama. Es krim mencair dapat dibekukan kembali.
+            </p>
+
+            <div class="bg-teal-900/40 border-l-4 border-amber-400 p-3 rounded-r-xl text-xs md:text-sm text-teal-200 flex items-start gap-2.5">
+              <i class="fa-solid fa-kaaba text-amber-400 text-base mt-0.5"></i>
+              <div>
+                <b class="text-amber-300">Catatan Tadabbur Ayat:</b>
+                <span id="spiritualNote">Semua bentuk perubahan wujud zat di alam merupakan keteraturan hukum Allah (Sunnatullah) untuk keseimbangan kehidupan manusia.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Quick Rules Guide -->
+        <div class="glass-dark rounded-2xl p-5 border border-slate-700/60 text-xs text-slate-300 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-lightbulb text-amber-400 text-2xl shrink-0"></i>
+            <div>
+              <b class="text-white">Petunjuk Diskusi Kelompok:</b>
+              <p class="mt-0.5 text-slate-400">Setiap kelompok berdiskusi 15 detik lalu mengangkat kartu jawaban "FISIKA" atau "KIMIA" secara bersamaan. Jawaban tepat mendapat <b>+10 poin</b>.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="lg:col-span-4 flex flex-col gap-6">
+        
+        <!-- Scoreboard Glass Container -->
+        <div class="glass-dark rounded-3xl p-5 border border-slate-700/80 shadow-2xl flex flex-col gap-4">
+          
+          <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-trophy text-amber-400 text-xl"></i>
+              <h3 class="font-bold text-white text-base">Papan Skor Kelompok</h3>
+            </div>
+            
+            <!-- Group Count Selector -->
+            <div class="flex items-center gap-1 text-xs">
+              <span class="text-slate-400">Tim:</span>
+              <select id="groupCountSelect" onchange="updateGroupCount()" class="bg-slate-800 text-amber-300 font-bold border border-slate-600 rounded px-2 py-1">
+                <option value="2">2 Kelompok</option>
+                <option value="3">3 Kelompok</option>
+                <option value="4" selected>4 Kelompok</option>
+                <option value="5">5 Kelompok</option>
+                <option value="6">6 Kelompok</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Group Scores List -->
+          <div id="groupsList" class="flex flex-col gap-3 max-h-[460px] overflow-y-auto pr-1">
+            <!-- Dynamic Groups will be inserted here -->
+          </div>
+
+          <!-- Winner Banner Button -->
+          <button onclick="showWinnerModal()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 text-slate-900 font-extrabold rounded-xl shadow-lg shadow-amber-500/20 btn-bounce text-sm flex items-center justify-center gap-2">
+            <i class="fa-solid fa-crown text-base"></i> Umumkan Detektif Terbaik!
+          </button>
+        </div>
+
+        <!-- Quick Summary Box -->
+        <div class="glass-dark rounded-2xl p-4 border border-slate-700/60 text-xs flex flex-col gap-2">
+          <span class="font-bold text-teal-300 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info"></i> Rencana Pelaksanaan Pembelajaran
+          </span>
+          <p class="text-slate-300 leading-relaxed">
+            <b>Topik:</b> Cinta Ilmu melalui Eksperimen Jujur Mengamati Perubahan Ciptaan Allah (QS. Al-Baqarah: 164).
+          </p>
+          <div class="flex items-center justify-between text-slate-400 pt-1 border-t border-slate-800">
+            <span>Model: PBL + Gamifikasi</span>
+            <span class="text-amber-400 font-bold">MTsN 15 Jakarta</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  
+  <!-- MODAL 1: Tadabbur Al-Qur'an -->
+  <div id="modalAyat" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-xl w-full rounded-3xl p-6 md:p-8 shadow-2xl relative border-2 border-amber-400/40">
+      <button onclick="closeModal('modalAyat')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-xl font-bold p-2">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center text-xl font-bold">
+          <i class="fa-solid fa-book-quran"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-900 text-lg">Integrasi Ayat Al-Qur'an</h3>
+          <p class="text-xs text-emerald-700 font-bold">QS. Al-Baqarah (2): 164</p>
+        </div>
+      </div>
+
+      <div class="bg-amber-50/80 border-l-4 border-amber-500 p-4 rounded-r-xl my-4 text-slate-800 text-sm leading-relaxed">
+        <blockquote class="italic font-serif text-base mb-2 text-slate-900">
+          "Sesungguhnya pada penciptaan langit dan bumi, pergantian malam dan siang, kapal yang berlayar di laut dengan (muatan) yang bermanfaat bagi manusia, apa yang diturunkan Allah dari langit berupa air, lalu dengan itu Dihidupkan-Nya bumi setelah mati..."
+        </blockquote>
+        <p class="text-xs text-slate-600 font-medium">
+          <b>Pesan Insersi IPA:</b> Menguatkan sikap jujur dan teliti dalam mengamati perubahan zat sebagai fenomena penciptaan Allah di alam semesta.
+        </p>
+      </div>
+
+      <button onclick="closeModal('modalAyat')" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl transition text-sm">
+        Saya Memahami &amp; Siap Belajar Jujur
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Winner Celebration & Leaderboard -->
+  <div id="modalWinner" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-dark max-w-2xl w-full rounded-3xl p-6 md:p-8 shadow-2xl relative border-2 border-amber-400/60 text-center">
+      
+      <div class="w-20 h-20 bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-900 rounded-full flex items-center justify-center text-4xl font-black mx-auto mb-4 detective-badge animate-bounce">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+
+      <span class="bg-amber-400/20 text-amber-300 text-xs font-extrabold px-3 py-1 rounded-full border border-amber-400/30 uppercase tracking-widest">
+        APRESIASIKELAS MTsN 15 JAKARTA
+      </span>
+
+      <h2 class="text-3xl md:text-4xl font-extrabold text-white mt-2 mb-1">
+        DETEKTIF PERUBAHAN ZAT TERBAIK!
+      </h2>
+      <p class="text-slate-300 text-sm mb-6">
+        Selamat kepada kelompok yang berhasil mengumpulkan poin pengamatan terbanyak!
+      </p>
+
+      <!-- Ranked Leaderboard Container -->
+      <div id="winnerRankings" class="flex flex-col gap-2.5 mb-6 text-left max-h-60 overflow-y-auto pr-1">
+        <!-- JS will populate ranked groups -->
+      </div>
+
+      <div class="bg-slate-800/80 p-4 rounded-xl text-xs text-slate-300 mb-6 text-left border border-slate-700">
+        <b class="text-amber-300 block mb-1"><i class="fa-solid fa-heart text-amber-400 mr-1"></i> Refleksi Sikap Detektif:</b>
+        <p>Kejujuran dan ketelitian dalam melaporkan hasil eksperimen merupakan wujud akhlak mulia dalam menuntut ilmu IPA.</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="window.print()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition text-sm">
+          <i class="fa-solid fa-print mr-1"></i> Cetak Hasil
+        </button>
+        <button onclick="closeModal('modalWinner')" class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold rounded-xl transition text-sm">
+          Tutup &amp; Refleksi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Recap Table of All 12 TKP Events -->
+  <div id="modalRecap" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-4xl w-full rounded-3xl p-6 md:p-8 shadow-2xl relative border border-slate-300 flex flex-col max-h-[90vh]">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div>
+          <h3 class="font-extrabold text-slate-900 text-xl">Daftar Lengkap 12 TKP Peristiwa Zat</h3>
+          <p class="text-xs text-slate-500">Rangkuman Kunci Klasifikasi Perubahan Fisika &amp; Kimia</p>
+        </div>
+        <button onclick="closeModal('modalRecap')" class="text-slate-400 hover:text-slate-800 text-xl font-bold p-2">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Scrollable Table -->
+      <div class="overflow-y-auto my-4 flex-grow pr-1">
+        <table class="w-full text-left text-sm border-collapse">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700 uppercase text-xs font-bold sticky top-0">
+              <th class="p-3 rounded-l-lg">No</th>
+              <th class="p-3">Peristiwa (TKP)</th>
+              <th class="p-3">Jenis Perubahan</th>
+              <th class="p-3 rounded-r-lg">Alasan / Bukti Ilmiah</th>
+            </tr>
+          </thead>
+          <tbody id="recapTableBody" class="divide-y divide-slate-200 text-slate-800">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <button onclick="closeModal('modalRecap')" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition text-sm mt-2">
+        Tutup Rekap
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // DATA ARRAY: 12 TKP Scenarios according to the RPP syllabus
+    const tkpData = [
+      {
+        id: 1,
+        title: "Es Krim Mencair Di Bawah Terik Matahari",
+        icon: "fa-ice-cream",
+        category: "Fisika",
+        question: "Apakah peristiwa es krim mencair termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Wujud benda berubah dari padat menjadi cair akibat panas, tidak ada zat baru yang terbentuk, dan es krim yang mencair bisa dibekukan kembali.",
+        spiritual: "Perubahan wujud zat akibat suhu adalah fenomena ketetapan fisik yang Allah ciptakan untuk kestabilan alam."
+      },
+      {
+        id: 2,
+        title: "Kayu Dibakar Menjadi Arang Dan Abu",
+        icon: "fa-fire",
+        category: "Kimia",
+        question: "Apakah pembakaran kayu termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Terbentuk zat baru berupa abu, asap, dan karbon. Abu hasil pembakaran tidak dapat dikembalikan menjadi kayu semula.",
+        spiritual: "Proses pembakaran menunjukkan perubahan wujud permanen yang menjadi pengingat keterbatasan materi di alam semesta."
+      },
+      {
+        id: 3,
+        title: "Air Laut Dibuat Menjadi Kristal Garam",
+        icon: "fa-water",
+        category: "Fisika",
+        question: "Apakah pembuatan garam dari air laut termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Proses penguapan air laut menyisakan kristal garam. Sifat kimia molekul garam (NaCl) tetap sama sebelum dan sesudah penguapan.",
+        spiritual: "Allah memudahkan manusia memanfaatkan kekayaan laut melalui hukum penguapan dan kristalisasi."
+      },
+      {
+        id: 4,
+        title: "Telur Mentah Digoreng Di Atas Wajan",
+        icon: "fa-egg",
+        category: "Kimia",
+        question: "Apakah penggorengan telur termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Terjadi denaturasi protein karena panas, menghasilkan ikatan molekul baru dengan tekstur dan warna permanen yang tidak bisa kembali.",
+        spiritual: "Perubahan struktur bahan makanan saat dimasak adalah karunia Allah agar zat gizi mudah dicerna manusia."
+      },
+      {
+        id: 5,
+        title: "Air Di Dalam Freezer Membeku Menjadi Es",
+        icon: "fa-snowflake",
+        category: "Fisika",
+        question: "Apakah pembekuan air menjadi es termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Hanya perubahan wujud dari cair ke padat. Kandungan molekul senyawa dasarnya tetap H2O dan dapat dicairkan kembali.",
+        spiritual: "Keteraturan titik beku air adalah bentuk keseimbangan iklim dan siklus kehidupan ciptaan Allah."
+      },
+      {
+        id: 6,
+        title: "Buah Apel Dibiarkan Membusuk Dan Berbau",
+        icon: "fa-apple-whole",
+        category: "Kimia",
+        question: "Apakah pembusukan apel termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Reaksi enzimatis dan oksidasi menghasilkan senyawa bau baru, perubahan warna, dan kerusakan jaringan yang tidak bisa kembali segar.",
+        spiritual: "Siklus daur ulang alami organisme membusuk kembali ke tanah sebagai penyubur ciptaan Allah."
+      },
+      {
+        id: 7,
+        title: "Kertas Dipotong-potong Menjadi Serpihan",
+        icon: "fa-scissors",
+        category: "Fisika",
+        question: "Apakah pemotongan kertas termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Hanya bentuk dan ukuran fisik kertas yang berubah, sedangkan sifat dasar molekul selulosa kertas tetap sama.",
+        spiritual: "Manusia diberi akal untuk mengubah bentuk benda di alam guna memenuhi kebutuhan hidup."
+      },
+      {
+        id: 8,
+        title: "Paku Besi Dibiarkan Di Tempat Lembap Berkarat",
+        icon: "fa-screwdriver-wrench",
+        category: "Kimia",
+        question: "Apakah paku besi berkarat termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Reaksi kimia antara besi (Fe), oksigen, dan air membentuk senyawa karat baru (Besi III Oksida) yang bersifat rapuh.",
+        spiritual: "Tanda-tanda pelapukan materi mengingatkan manusia agar senantiasa merawat dan bersyukur atas nikmat benda."
+      },
+      {
+        id: 9,
+        title: "Air Di Dalam Panci Mendidih Dan Beruap",
+        icon: "fa-mug-hot",
+        category: "Fisika",
+        question: "Apakah air yang mendidih dan menjadi uap termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Terjadi perubahan wujud dari cair menjadi gas/uap karena energi panas. Uap air jika diembunkan akan kembali menjadi air.",
+        spiritual: "Siklus penguapan air adalah bagian dari ketetapan Allah dalam pembentukan awan dan hujan."
+      },
+      {
+        id: 10,
+        title: "Beras Dimasak Menggunakan Magic Com Menjadi Nasi",
+        icon: "fa-bowl-rice",
+        category: "Kimia",
+        question: "Apakah pematangan beras menjadi nasi termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Terjadi reaksi gelatinisasi pati dan perubahan ikatan kimia karena air dan suhu tinggi, membentuk nasi yang tidak bisa menjadi beras lagi.",
+        spiritual: "Allah melimpahkan rezeki makanan yang nikmat melalui proses sains pematangan bahan pangan."
+      },
+      {
+        id: 11,
+        title: "Lilin Meleleh Terkena Panas Nyala Api",
+        icon: "fa-wax-candle",
+        category: "Fisika",
+        question: "Apakah pelelehan wujud lilin termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Lilin yang meleleh hanya berubah bentuk dari padat ke cair. Ketika dingin, cairan lilin memadat kembali dengan sifat yang sama.",
+        spiritual: "Karakteristik bahan yang melunak karena panas memberikan kemudahan dalam industri manufaktur."
+      },
+      {
+        id: 12,
+        title: "Sampah Daun Kering Dibakar Di Halaman",
+        icon: "fa-leaf",
+        category: "Kimia",
+        question: "Apakah pembakaran sampah daun termasuk Perubahan Fisika atau Perubahan Kimia?",
+        explanation: "Reaksi pembakaran menguraikan senyawa organik daun menjadi abu, gas karbon dioksida (CO2), dan uap air.",
+        spiritual: "Mengamati pelepasan unsur kimia ke udara mengajarkan kita menjaga kebersihan lingkungan hidup."
+      }
+    ];
+
+    // STATE VARIABLES
+    let currentMode = 'class'; // 'class' or 'student'
+    let currentIndex = 0;
+    let timerInterval = null;
+    let timerSeconds = 15;
+    let isAnswerRevealed = false;
+
+    // Group Score State (Default 4 groups)
+    let groups = [
+      { id: 1, name: "Kelompok 1", score: 0 },
+      { id: 2, name: "Kelompok 2", score: 0 },
+      { id: 3, name: "Kelompok 3", score: 0 },
+      { id: 4, name: "Kelompok 4", score: 0 }
+    ];
+
+    // INITIALIZATION ON LOAD
+    window.onload = function() {
+      renderCard(currentIndex);
+      renderGroups();
+      populateRecapTable();
+    };
+
+    // MODE SWITCHING (Classroom vs Student Self Practice)
+    function switchMode(mode) {
+      currentMode = mode;
+      const btnClass = document.getElementById('btnModeClass');
+      const btnStudent = document.getElementById('btnModeStudent');
+      const classControls = document.getElementById('classControlsArea');
+      const studentArea = document.getElementById('studentChoiceArea');
+      const timerBox = document.getElementById('timerContainer');
+
+      if (mode === 'class') {
+        btnClass.className = "px-3 py-1.5 rounded-lg font-bold transition-all bg-emerald-600 text-white shadow-md";
+        btnStudent.className = "px-3 py-1.5 rounded-lg font-bold transition-all text-slate-300 hover:text-white";
+        classControls.classList.remove('hidden');
+        studentArea.classList.add('hidden');
+        timerBox.classList.remove('hidden');
+      } else {
+        btnStudent.className = "px-3 py-1.5 rounded-lg font-bold transition-all bg-emerald-600 text-white shadow-md";
+        btnClass.className = "px-3 py-1.5 rounded-lg font-bold transition-all text-slate-300 hover:text-white";
+        classControls.classList.add('hidden');
+        studentArea.classList.remove('hidden');
+        timerBox.classList.add('hidden');
+      }
+      resetCardState();
+    }
+
+    // RENDER TKP CARD CONTENT
+    function renderCard(index) {
+      const data = tkpData[index];
+      
+      // Update Index Displays & Progress
+      document.getElementById('tkpNumberDisplay').innerText = data.id < 10 ? '0' + data.id : data.id;
+      document.getElementById('currentCardIndexText').innerText = `TKP ${data.id}`;
+      
+      const percent = Math.round(((index + 1) / tkpData.length) * 100);
+      document.getElementById('progressPercentText').innerText = `${percent}%`;
+      document.getElementById('progressBar').style.width = `${percent}%`;
+
+      // Update Card Visuals
+      document.getElementById('tkpTitle').innerText = data.title;
+      document.getElementById('tkpQuestion').innerText = data.question;
+      document.getElementById('tkpIcon').className = `fa-solid ${data.icon}`;
+      
+      // Update Secret Answer Data
+      document.getElementById('correctAnswerText').innerText = `PERUBAHAN ${data.category.toUpperCase()}`;
+      document.getElementById('answerExplanation').innerText = data.explanation;
+      document.getElementById('spiritualNote').innerText = data.spiritual;
+
+      // Reset Card Reveal State
+      resetCardState();
+    }
+
+    function resetCardState() {
+      clearInterval(timerInterval);
+      timerSeconds = 15;
+      document.getElementById('timerText').innerText = '15s';
+      
+      isAnswerRevealed = false;
+      document.getElementById('answerPanel').classList.add('hidden');
+      document.getElementById('cardCategoryTag').classList.add('hidden');
+    }
+
+    // COUNTDOWN TIMER
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerSeconds = 15;
+      document.getElementById('timerText').innerText = `${timerSeconds}s`;
+
+      timerInterval = setInterval(() => {
+        timerSeconds--;
+        if (timerSeconds >= 0) {
+          document.getElementById('timerText').innerText = `${timerSeconds}s`;
+        } else {
+          clearInterval(timerInterval);
+          document.getElementById('timerText').innerText = "WAKTU HABIS!";
+        }
+      }, 1000);
+    }
+
+    // REVEAL ANSWER (Teacher Mode)
+    function revealAnswer() {
+      isAnswerRevealed = true;
+      clearInterval(timerInterval);
+      
+      const panel = document.getElementById('answerPanel');
+      panel.classList.remove('hidden');
+
+      const data = tkpData[currentIndex];
+      const categoryTag = document.getElementById('cardCategoryTag');
+      categoryTag.innerText = `KATEGORI: ${data.category.toUpperCase()}`;
+      categoryTag.className = data.category === 'Fisika' 
+        ? 'text-xs font-extrabold px-3 py-1 rounded-full border border-teal-500 bg-teal-50 text-teal-800'
+        : 'text-xs font-extrabold px-3 py-1 rounded-full border border-emerald-500 bg-emerald-50 text-emerald-800';
+      categoryTag.classList.remove('hidden');
+    }
+
+    // STUDENT ANSWER SELECTION MODE
+    function studentAnswer(chosenCategory) {
+      revealAnswer();
+      const data = tkpData[currentIndex];
+      const isCorrect = chosenCategory.toLowerCase() === data.category.toLowerCase();
+
+      if (isCorrect && typeof confetti === 'function') {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      }
+    }
+
+    // CARD NAVIGATION
+    function nextCard() {
+      if (currentIndex < tkpData.length - 1) {
+        currentIndex++;
+        renderCard(currentIndex);
+      } else {
+        showWinnerModal();
+      }
+    }
+
+    function prevCard() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderCard(currentIndex);
+      }
+    }
+
+    // GROUP SCORE MANAGEMENT
+    function renderGroups() {
+      const container = document.getElementById('groupsList');
+      container.innerHTML = '';
+
+      groups.forEach((g, idx) => {
+        const groupEl = document.createElement('div');
+        groupEl.className = "bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-md";
+        
+        groupEl.innerHTML = `
+          <div class="flex items-center gap-2.5 flex-1 min-w-0">
+            <span class="w-7 h-7 rounded-lg bg-teal-900/60 text-teal-300 font-extrabold text-xs flex items-center justify-center shrink-0 border border-teal-500/30">
+              ${idx + 1}
+            </span>
+            <input type="text" value="${g.name}" onchange="updateGroupName(${g.id}, this.value)" class="bg-transparent font-bold text-white text-sm focus:bg-slate-700 px-2 py-1 rounded outline-none w-full border-b border-transparent focus:border-amber-400">
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-amber-400 font-black text-lg font-mono min-w-[32px] text-right">${g.score}</span>
+            <button onclick="addScore(${g.id}, 10)" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-lg transition btn-bounce flex items-center gap-1 shadow-sm">
+              +10
+            </button>
+            <button onclick="addScore(${g.id}, -10)" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold text-xs rounded-lg transition">
+              -10
+            </button>
+          </div>
+        `;
+        container.appendChild(groupEl);
+      });
+    }
+
+    function updateGroupCount() {
+      const count = parseInt(document.getElementById('groupCountSelect').value);
+      const newGroups = [];
+      for (let i = 1; i <= count; i++) {
+        const existing = groups.find(g => g.id === i);
+        if (existing) {
+          newGroups.push(existing);
+        } else {
+          newGroups.push({ id: i, name: `Kelompok ${i}`, score: 0 });
+        }
+      }
+      groups = newGroups;
+      renderGroups();
+    }
+
+    function updateGroupName(id, newName) {
+      const g = groups.find(item => item.id === id);
+      if (g) g.name = newName;
+    }
+
+    function addScore(id, pts) {
+      const g = groups.find(item => item.id === id);
+      if (g) {
+        g.score = Math.max(0, g.score + pts);
+        renderGroups();
+      }
+    }
+
+    // WINNER MODAL & CONFETTI CELEBRATION
+    function showWinnerModal() {
+      const sorted = [...groups].sort((a, b) => b.score - a.score);
+      const container = document.getElementById('winnerRankings');
+      container.innerHTML = '';
+
+      sorted.forEach((g, rank) => {
+        const item = document.createElement('div');
+        let bgClass = "bg-slate-800/80 border-slate-700";
+        let badgeIcon = `<span class="text-slate-400 font-bold text-sm w-6">#${rank + 1}</span>`;
+
+        if (rank === 0) {
+          bgClass = "bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border-amber-400/60";
+          badgeIcon = `<i class="fa-solid fa-crown text-amber-400 text-lg w-6"></i>`;
+        } else if (rank === 1) {
+          badgeIcon = `<i class="fa-solid fa-medal text-slate-300 text-base w-6"></i>`;
+        } else if (rank === 2) {
+          badgeIcon = `<i class="fa-solid fa-award text-amber-600 text-base w-6"></i>`;
+        }
+
+        item.className = `p-3.5 rounded-xl border ${bgClass} flex items-center justify-between gap-3`;
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            ${badgeIcon}
+            <span class="font-bold text-white text-base">${g.name}</span>
+          </div>
+          <span class="font-black text-amber-300 text-lg font-mono">${g.score} Poin</span>
+        `;
+        container.appendChild(item);
+      });
+
+      openModal('modalWinner');
+
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    // RECAP TABLE POPULATION
+    function populateRecapTable() {
+      const tbody = document.getElementById('recapTableBody');
+      tbody.innerHTML = '';
+
+      tkpData.forEach((d) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-slate-500">${d.id}</td>
+          <td class="p-3 font-bold text-slate-900">${d.title}</td>
+          <td class="p-3">
+            <span class="${d.category === 'Fisika' ? 'bg-teal-100 text-teal-800' : 'bg-emerald-100 text-emerald-800'} font-bold px-2.5 py-1 rounded-md text-xs">
+              ${d.category}
+            </span>
+          </td>
+          <td class="p-3 text-slate-600 text-xs leading-relaxed">${d.explanation}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // MODAL HELPERS
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function resetGame() {
+      currentIndex = 0;
+      groups.forEach(g => g.score = 0);
+      renderCard(currentIndex);
+      renderGroups();
+    }
+  </script>
+</body>
+</html>

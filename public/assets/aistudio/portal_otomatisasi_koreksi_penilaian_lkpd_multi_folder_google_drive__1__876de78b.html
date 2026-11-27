@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Otomatisasi Koreksi & Penilaian LKPD Multi-Folder Google Drive</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#4f46e5',
+              600: '#4338ca',
+              700: '#3730a3',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- HEADER UTAMA (Kompatibel untuk Embed Google Sites maupun Layar Penuh) -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-2xs no-print">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3.5">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5">
+        <!-- Brand & Folder Target -->
+        <div class="flex items-start sm:items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
+            <i data-lucide="folder-sync" class="w-5 h-5"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug">
+                Portal Otomatisasi Koreksi & Penilaian LKPD Multi-Folder
+              </h1>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <i data-lucide="layout-template" class="w-3 h-3"></i> Siap Embed Google Sites
+              </span>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-600">
+              <a href="https://drive.google.com/drive/folders/1rjmYpNU6PJjkhK0vyOV9BCADtTkVSiUL?usp=drive_link" target="_blank" rel="noopener noreferrer"
+                class="inline-flex items-center gap-1 font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i>
+                <span>Folder Induk Google Drive (1rjmYpNU...VSiUL)</span>
+                <i data-lucide="external-link" class="w-3 h-3"></i>
+              </a>
+              <span class="hidden sm:inline text-slate-300">|</span>
+              <span class="inline-flex items-center gap-1.5 text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Trigger Harian Aktif: Setiap Hari Pukul <strong id="scheduleTimeBadge">22:00 WIB</strong></span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tombol Aksi Utama -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnRunRegrade" onclick="runDailyRegradeNow()"
+            class="inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            <span>Jalankan Koreksi Ulang Sekarang</span>
+          </button>
+
+          <button onclick="syncToGoogleSheet()"
+            class="inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition">
+            <i data-lucide="sheet" class="w-4 h-4 text-emerald-600"></i>
+            <span>Sinkronisasi ke Google Sheet</span>
+          </button>
+
+          <button onclick="switchView('appscript')"
+            class="inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition">
+            <i data-lucide="code-2" class="w-4 h-4 text-indigo-600"></i>
+            <span>Panduan & Kode Deploy GAS</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bar Koneksi Mode (Simulasi Interaktif vs Web App URL) & Navigasi Tab Portal -->
+      <div class="mt-3 pt-3 border-t border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+        <!-- Navigasi Sub-Halaman Portal -->
+        <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl w-fit">
+          <button id="tabBtnDashboard" onclick="switchView('dashboard')"
+            class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-indigo-700 shadow-2xs transition flex items-center gap-1.5">
+            <i data-lucide="folders" class="w-3.5 h-3.5"></i>
+            <span>Monitoring Folder & Tab</span>
+          </button>
+          <button id="tabBtnRecap" onclick="switchView('recap')"
+            class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+            <i data-lucide="table" class="w-3.5 h-3.5"></i>
+            <span>Rekapitulasi Google Sheet & Tab Nilai</span>
+          </button>
+          <button id="tabBtnAppScript" onclick="switchView('appscript')"
+            class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+            <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+            <span>Deploy Google Apps Script & Google Sites</span>
+          </button>
+        </div>
+
+        <!-- Pengaturan Mode Koneksi Backend -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs">
+            <button id="modeSimBtn" onclick="setConnectionMode('simulation')"
+              class="px-2.5 py-1 rounded-lg font-semibold bg-white text-slate-900 shadow-2xs transition">
+              Mode Pratinjau / Simulasi Live
+            </button>
+            <button id="modeGasBtn" onclick="setConnectionMode('gas')"
+              class="px-2.5 py-1 rounded-lg font-semibold text-slate-600 hover:text-slate-900 transition">
+              Mode Terhubung GAS Web App
+            </button>
+          </div>
+
+          <div id="gasUrlBox" class="hidden flex items-center gap-1.5 flex-1 sm:flex-initial">
+            <input id="gasWebAppUrlInput" type="url"
+              placeholder="https://script.google.com/macros/s/.../exec"
+              class="w-full sm:w-72 bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <button onclick="connectAndFetchFromGAS()"
+              class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shrink-0">
+              Hubungkan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Bar Koreksi Ulang Harian -->
+    <div id="syncProgressBanner" class="hidden bg-indigo-50 border-t border-indigo-200 px-4 sm:px-6 py-2">
+      <div class="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2 text-xs font-semibold text-indigo-800">
+          <svg class="animate-spin h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span id="syncProgressLabel">Memindai subfolder dan mengoreksi ulang seluruh tab...</span>
+        </div>
+        <div class="flex-1 max-w-md bg-indigo-200 rounded-full h-2 overflow-hidden">
+          <div id="syncProgressFill" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-5">
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 1: DASHBOARD MONITORING MULTI-FOLDER & MULTI-TAB                 -->
+    <!-- ===================================================================== -->
+    <section id="viewDashboard" class="space-y-5">
+
+      <!-- KPI Summary Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Subfolder Kelas</span>
+            <i data-lucide="folder-tree" class="w-4 h-4 text-indigo-600"></i>
+          </div>
+          <div id="kpiSubfolders" class="text-2xl font-extrabold text-slate-900 mt-1.5">2 Folder</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Terpindai rekursif otomatis</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Dokumen & Tab Dinilai</span>
+            <i data-lucide="files" class="w-4 h-4 text-blue-600"></i>
+          </div>
+          <div id="kpiDocsTabs" class="text-2xl font-extrabold text-slate-900 mt-1.5">0 Docs / 0 Tab</div>
+          <div id="kpiExcludedTabs" class="text-[11px] text-slate-500 mt-0.5">0 tab acuan/nilai dikecualikan</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Rata-Rata Nilai</span>
+            <i data-lucide="trending-up" class="w-4 h-4 text-violet-600"></i>
+          </div>
+          <div id="kpiAverageScore" class="text-2xl font-extrabold text-violet-700 mt-1.5">0,0</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Skala 100 (KKM &ge; 80)</div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Tuntas (&ge; 80)</span>
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+          </div>
+          <div id="kpiTuntas" class="text-2xl font-extrabold text-emerald-600 mt-1.5">0 Tab</div>
+          <div id="kpiTuntasPct" class="text-[11px] text-slate-500 mt-0.5">0% memenuhi KKTP</div>
+        </div>
+
+        <div class="col-span-2 md:col-span-1 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+          <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Remedial / Belum</span>
+            <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600"></i>
+          </div>
+          <div id="kpiRemedial" class="text-2xl font-extrabold text-amber-600 mt-1.5">0 Tab</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Menunggu perbaikan siswa</div>
+        </div>
+      </div>
+
+      <!-- Filter & Struktur Subfolder -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- Sidebar Kiri: Pohon Subfolder & Dokumen Google Drive -->
+        <aside class="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div class="p-3.5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="folder-open" class="w-4 h-4 text-indigo-600"></i>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">Struktur Folder Drive</h2>
+            </div>
+            <span class="text-[11px] font-medium text-slate-500" id="lastSyncTimestamp">Sync: Hari ini</span>
+          </div>
+
+          <div id="folderTreeContainer" class="p-3 space-y-3">
+            <!-- Rendered via JS -->
+          </div>
+
+          <!-- Info Jadwal Sinkronisasi Harian -->
+          <div class="p-3.5 bg-indigo-50/60 border-t border-indigo-100 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-600"></i>
+                Jadwal Koreksi Ulang
+              </span>
+              <select id="scheduleSelect" onchange="updateScheduleTime(this.value)"
+                class="bg-white border border-indigo-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-indigo-800 focus:outline-none">
+                <option value="06:00 WIB">06:00 WIB</option>
+                <option value="15:00 WIB">15:00 WIB</option>
+                <option value="22:00 WIB" selected>22:00 WIB</option>
+              </select>
+            </div>
+            <p class="text-[11px] text-indigo-800/80 leading-relaxed">
+              Setiap hari sistem memindai ulang seluruh tab. Jika siswa memperbaiki jawaban di atas penanda koreksi, blok nilai &amp; tabel kesalahan diperbarui otomatis tanpa duplikasi.
+            </p>
+          </div>
+        </aside>
+
+        <!-- Konten Utama Kanan: Filter Bar + Tabel Daftar Tab Siswa/Kelompok -->
+        <div class="lg:col-span-9 space-y-4">
+          <!-- Filter & Search Bar -->
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <select id="filterFolderSelect" onchange="renderTabsTable()"
+                class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="ALL">Semua Subfolder / Kelas</option>
+              </select>
+
+              <select id="filterStatusSelect" onchange="renderTabsTable()"
+                class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="ALL">Semua Status (Tuntas &amp; Remedial)</option>
+                <option value="TUNTAS">Tuntas (&ge; 80)</option>
+                <option value="REMEDIAL">Remedial (&lt; 80)</option>
+                <option value="KOSONG">Belum Mengumpulkan / Kosong</option>
+                <option value="EXCLUDED">Tab Acuan / Nilai (Dikecualikan)</option>
+              </select>
+            </div>
+
+            <div class="relative flex-1 sm:max-w-xs">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input id="searchTabInput" type="text" oninput="renderTabsTable()"
+                placeholder="Cari nama siswa, kelompok, atau tab..."
+                class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+          </div>
+
+          <!-- Tabel Daftar Seluruh Tab -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Daftar Tab Dokumen Google Docs &amp; Status Koreksi</h3>
+                <p class="text-xs text-slate-500">Klik baris tab siswa untuk melihat detail injeksi rubrik, tabel penjelasan kesalahan, atau simulasi revisi jawaban siswa.</p>
+              </div>
+              <span id="tableResultCounter" class="text-xs font-semibold text-slate-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                Menampilkan 0 tab
+              </span>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr class="bg-slate-100/80 text-slate-700 border-b border-slate-200 text-[11px] uppercase tracking-wider">
+                    <th class="py-3 px-3.5 font-bold">Subfolder / Dokumen</th>
+                    <th class="py-3 px-3.5 font-bold">Nama Tab</th>
+                    <th class="py-3 px-3.5 font-bold">Identitas Siswa / Kelompok</th>
+                    <th class="py-3 px-3.5 font-bold text-center">Nilai</th>
+                    <th class="py-3 px-3.5 font-bold text-center">Status (KKM &ge; 80)</th>
+                    <th class="py-3 px-3.5 font-bold min-w-[230px]">Fokus Perbaikan Siswa</th>
+                    <th class="py-3 px-3.5 font-bold text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="monitoringTableBody" class="divide-y divide-slate-200">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 2: REKAPITULASI GOOGLE SHEET & TAB NILAI                         -->
+    <!-- ===================================================================== -->
+    <section id="viewRecap" class="hidden space-y-5">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Rekapitulasi Nilai Per Kelas (Sinkron Tab "Nilai" &amp; Google Sheet)</h2>
+          <p class="text-xs text-slate-500">Data otomatis memecah anggota kelompok menjadi baris absen individu dan memperbarui status ketuntasan.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="recapClassFilter" onchange="renderRecapSheetTable()"
+            class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none">
+            <option value="ALL">Semua Kelas / Subfolder</option>
+          </select>
+
+          <button onclick="copyRecapTableForDocs()"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-2xs transition">
+            <i data-lucide="clipboard-copy" class="w-4 h-4"></i>
+            <span>Salin ke Tab "Nilai" Google Docs</span>
+          </button>
+
+          <button onclick="exportRecapCSV()"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition">
+            <i data-lucide="download" class="w-4 h-4 text-emerald-600"></i>
+            <span>Unduh CSV / Google Sheet</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-emerald-50/80 text-emerald-950 border-b border-emerald-200 text-[11px] uppercase tracking-wider">
+                <th class="py-3 px-4 font-bold w-12">No</th>
+                <th class="py-3 px-4 font-bold">Kelas / Subfolder</th>
+                <th class="py-3 px-4 font-bold">Nama Siswa</th>
+                <th class="py-3 px-4 font-bold">Asal Tab / Kelompok</th>
+                <th class="py-3 px-4 font-bold text-center">Nilai</th>
+                <th class="py-3 px-4 font-bold text-center">Predikat</th>
+                <th class="py-3 px-4 font-bold text-center">Status (KKM &ge; 80)</th>
+                <th class="py-3 px-4 font-bold">Tindak Lanjut Perbaikan</th>
+              </tr>
+            </thead>
+            <tbody id="recapSheetTableBody" class="divide-y divide-slate-200">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 3: GENERATOR KODE & PANDUAN DEPLOY GOOGLE APPS SCRIPT + SITES    -->
+    <!-- ===================================================================== -->
+    <section id="viewAppScript" class="hidden space-y-5">
+      <!-- Panduan 4 Langkah -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Arsitektur Otomatisasi Produksi</span>
+            <h2 class="text-base sm:text-lg font-extrabold text-slate-900">Panduan Deploy Google Apps Script (Web App + Trigger Harian + Embed Google Sites)</h2>
+          </div>
+          <button onclick="copyGasCode()"
+            class="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span>Salin Seluruh Kode Code.gs</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs">
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="w-6 h-6 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center">1</div>
+            <h3 class="font-bold text-slate-900">Buat Proyek Apps Script</h3>
+            <p class="text-slate-600 leading-relaxed">Buka <strong>script.google.com</strong> &rarr; Proyek Baru &rarr; tempel kode <code class="bg-white px-1 rounded border">Code.gs</code> di bawah, lalu isi <code class="bg-white px-1 rounded border">GEMINI_API_KEY</code> Anda.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="w-6 h-6 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center">2</div>
+            <h3 class="font-bold text-slate-900">Aktifkan Trigger Harian</h3>
+            <p class="text-slate-600 leading-relaxed">Pilih fungsi <code class="bg-white px-1 rounded border">pasangTriggerHarian</code> lalu klik <strong>Jalankan (Run)</strong> satu kali untuk menjadwalkan koreksi ulang otomatis setiap hari.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="w-6 h-6 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center">3</div>
+            <h3 class="font-bold text-slate-900">Deploy sebagai Web App</h3>
+            <p class="text-slate-600 leading-relaxed">Klik <strong>Terapkan &rarr; Deployment Baru &rarr; Aplikasi Web</strong>. Atur <em>Jalankan sebagai: Saya</em> dan <em>Yang memiliki akses: Siapa saja</em>.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div class="w-6 h-6 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center">4</div>
+            <h3 class="font-bold text-slate-900">Sematkan ke Google Sites</h3>
+            <p class="text-slate-600 leading-relaxed">Salin URL Web App (<code class="bg-white px-1 rounded border">.../exec</code>), lalu di <strong>Google Sites</strong> pilih <strong>Sisipkan (Embed) &rarr; Berdasarkan URL</strong>.</p>
+          </div>
+        </div>
+
+        <!-- Code Viewer -->
+        <div class="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950">
+          <div class="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs text-slate-300">
+            <span class="font-mono font-semibold text-indigo-400">Code.gs — Terkonfigurasi Folder ID: 1rjmYpNU6PJjkhK0vyOV9BCADtTkVSiUL</span>
+            <button onclick="copyGasCode()" class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> Salin Kode
+            </button>
+          </div>
+          <pre id="gasCodeBlock" class="p-4 text-xs font-mono text-slate-200 overflow-x-auto max-h-[540px] leading-relaxed select-all"></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================================= -->
+  <!-- SLIDE-OVER DRAWER: DETAIL INJEKSI GOOGLE DOCS & SIMULASI REVISI SISWA   -->
+  <!-- ======================================================================= -->
+  <div id="detailDrawerOverlay" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex justify-end">
+    <div class="bg-white w-full max-w-3xl h-full shadow-2xl border-l border-slate-200 flex flex-col overflow-hidden">
+      <!-- Drawer Header -->
+      <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span id="drawerFolderBadge" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-100 text-indigo-800">Kelas</span>
+            <span id="drawerDocBadge" class="text-xs font-medium text-slate-500 truncate">Dokumen</span>
+          </div>
+          <h3 id="drawerTabTitle" class="text-base font-extrabold text-slate-900 mt-1 truncate">Detail Tab Siswa</h3>
+        </div>
+        <button onclick="closeDetailDrawer()" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 rounded-xl transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Drawer Body -->
+      <div id="drawerBodyContent" class="flex-1 overflow-y-auto p-5 space-y-5">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // DATA MODEL & SIMULASI FOLDER GOOGLE DRIVE (1rjmYpNU6PJjkhK0vyOV9BCADtTkVSiUL)
+    // =========================================================================
+    const ROOT_FOLDER_ID = '1rjmYpNU6PJjkhK0vyOV9BCADtTkVSiUL';
+
+    let appState = {
+      mode: 'simulation', // 'simulation' | 'gas'
+      gasWebAppUrl: '',
+      scheduleTime: '22:00 WIB',
+      selectedTabId: null,
+      folders: [
+        {
+          id: 'sub-vii3',
+          folderName: 'Kelas VII-3 — IPA',
+          docId: '1f0mpNz68aY-qYdQwBlg0LxPpBzws2W7jc6mN2i0KdqE',
+          docTitle: '7.3 CP4 Pengukuran & Konversi Satuan Suhu',
+          docUrl: 'https://docs.google.com/document/d/1f0mpNz68aY-qYdQwBlg0LxPpBzws2W7jc6mN2i0KdqE/edit',
+          kkm: 80,
+          rubricSummary: 'Konsep Skala Suhu (20%), Pengukuran & Konversi H (25%), Latihan Tim & Kuis (25%), Analisis & Berpikir Kritis (20%), Kesimpulan & Refleksi (10%)',
+          tabs: [
+            {
+              id: 'vii3-materi',
+              tabName: 'Materi',
+              excluded: true,
+              exclusionReason: 'Tab Pertama (Materi Acuan)',
+              studentIdentity: 'Materi Ajar Suhu & Termometer',
+              members: [],
+              score: null,
+              predicate: '-',
+              status: 'EXCLUDED',
+              studentAnswerSnippet: 'Perbandingan skala C : R : (F - 32) : (K - 273) = 5 : 4 : 9 : 5.',
+              rubricBreakdown: [],
+              errorTable: [],
+              teacherFeedback: '',
+              recapNote: 'Tab pertama (Materi) otomatis dilewati sistem.'
+            },
+            {
+              id: 'vii3-nilai',
+              tabName: 'Nilai',
+              excluded: true,
+              exclusionReason: 'Tab Rekapitulasi Otomatis',
+              studentIdentity: 'Rekapitulasi 30 Siswa Kelas VII-3',
+              members: [],
+              score: null,
+              predicate: '-',
+              status: 'EXCLUDED',
+              studentAnswerSnippet: 'Tabel rekapitulasi nilai 30 siswa kelas VII-3 yang diperbarui otomatis setiap hari.',
+              rubricBreakdown: [],
+              errorTable: [],
+              teacherFeedback: '',
+              recapNote: 'Tab target penulisan rekapitulasi nilai & tindak lanjut.'
+            },
+            {
+              id: 'vii3-tab3',
+              tabName: '3 (Kelompok 3)',
+              excluded: false,
+              studentIdentity: 'Kelompok 3: Adhwa Amira Jasmine, Desy Afriyani, Ajeng Apriliana',
+              members: ['Adhwa Amira Jasmine', 'Desy Afriyani', 'Ajeng Apriliana'],
+              score: 86,
+              predicate: 'B',
+              status: 'TUNTAS',
+              studentAnswerSnippet: 'Bagian B, C, F (0°C-100°C, 0°R-80°R, 32°F-212°F, 273 K-373 K) benar. Bagian H: Sampel A = 30°C (24°R, 86°F, 303 K), Sampel B = 55°C (44°R, 131°F, 328 K), namun langkah perhitungannya belum ditulis. Latihan Tim No. 2 jawaban tertulis 140°F (di langkah hitung 104°F). Kuis individu belum diisi.',
+              rubricBreakdown: [
+                { aspect: 'Pemahaman Konsep & Titik Tetap (F)', max: 20, score: 20, note: 'Titik beku & didih 4 skala suhu tepat dengan satuan baku.' },
+                { aspect: 'Pengukuran & Konversi Sampel (H)', max: 25, score: 20, note: 'Hasil tabel tepat, tetapi langkah hitung konversi belum dituliskan.' },
+                { aspect: 'Latihan Konversi Tim & Kuis (Keg. 3)', max: 25, score: 19, note: 'Salah ketik jawaban No. 2 (140°F) dan kuis individu kosong.' },
+                { aspect: 'Analisis & Berpikir Kritis (J-K)', max: 20, score: 19, note: 'Perbandingan suhu dan pembuktian kesetaraan sangat jelas.' },
+                { aspect: 'Kesimpulan & Refleksi (L-M)', max: 10, score: 8, note: 'Kesimpulan sesuai hipotesis; refleksi perlu diperdalam.' }
+              ],
+              errorTable: [
+                {
+                  part: 'Bagian H — Langkah Konversi Sampel A & B',
+                  current: 'Hanya terisi angka hasil di tabel (24°R, 86°F, 303 K), kolom langkah hitung kosong.',
+                  explanation: 'Proses matematis konversi dari Celcius ke Reamur, Fahrenheit, dan Kelvin belum ditampilkan.',
+                  fix: 'Tuliskan rumus dan substitusi angkanya, misal Sampel A (30°C): tR = 4/5 × 30 = 24°R; tF = (9/5 × 30) + 32 = 86°F; T = 30 + 273 = 303 K.'
+                },
+                {
+                  part: 'Kegiatan 3 — Latihan Tim No. 2 & Kuis Individu',
+                  current: 'Kolom jawaban No. 2 tertulis 140°F; Kuis Individu kosong.',
+                  explanation: 'Terjadi kesalahan ketik transposisi angka (104°F tertulis 140°F) dan bagian kuis belum dikerjakan.',
+                  fix: 'Ubah jawaban No. 2 menjadi 104°F sesuai langkah hitung ((9/5 × 40) + 32 = 104°F) serta lengkapi soal Kuis Individu.'
+                }
+              ],
+              teacherFeedback: 'Hasil kerja Kelompok 3 sudah melampaui KKTP (86 — Tuntas). Lengkapi langkah hitung pada Bagian H dan perbaiki salah ketik 104°F agar dokumentasi belajar semakin sempurna.',
+              recapNote: 'Lengkapi langkah hitung konversi sampel A/B, perbaiki typo 140°F → 104°F di No. 2, dan isi Kuis Individu.'
+            },
+            {
+              id: 'vii3-tab4',
+              tabName: '4 (Kelompok 4)',
+              excluded: false,
+              studentIdentity: 'Kelompok 4: Vallcyo Okta Aymar, Diaz Adi Saputra',
+              members: ['Vallcyo Okta Aymar', 'Diaz Adi Saputra'],
+              score: 68,
+              predicate: 'D',
+              status: 'REMEDIAL',
+              studentAnswerSnippet: 'Bagian B, C, tabel & langkah konversi H, Latihan Tim (6 soal), dan Kuis Individu (5 soal) terisi lengkap. Penulisan Kelvin memakai tanda derajat (273°K, 303°K). Bagian Analisis (J), Berpikir Kritis (K), Kesimpulan (L), dan Refleksi (M) masih kosong seluruhnya.',
+              rubricBreakdown: [
+                { aspect: 'Pemahaman Konsep & Titik Tetap (F)', max: 20, score: 17, note: 'Konsep angka tepat, namun Kelvin ditulis memakai tanda derajat (°K).' },
+                { aspect: 'Pengukuran & Konversi Sampel (H)', max: 25, score: 24, note: 'Data dan langkah perhitungan sampel A & B sangat lengkap.' },
+                { aspect: 'Latihan Konversi Tim & Kuis (Keg. 3)', max: 25, score: 25, note: 'Seluruh 6 soal latihan tim dan 5 soal kuis benar.' },
+                { aspect: 'Analisis & Berpikir Kritis (J-K)', max: 20, score: 2, note: 'Bagian J dan K belum dikerjakan.' },
+                { aspect: 'Kesimpulan & Refleksi (L-M)', max: 10, score: 0, note: 'Bagian L dan M kosong.' }
+              ],
+              errorTable: [
+                {
+                  part: 'Bagian F & H — Penulisan Satuan Kelvin',
+                  current: '273°K, 373°K, 303°K, 333°K',
+                  explanation: 'Dalam Sistem Internasional (SI), satuan Kelvin merupakan skala mutlak sehingga tidak menggunakan tanda derajat (°).',
+                  fix: 'Hapus tanda derajat dan tulis menggunakan huruf kapital K saja: 273 K, 373 K, 303 K, dan 333 K.'
+                },
+                {
+                  part: 'Bagian J, K, L, dan M (Analisis s.d. Refleksi)',
+                  current: '[Kosong / Belum diisi]',
+                  explanation: 'Tahap penarikan makna dari data eksperimen dan refleksi belum dikerjakan sehingga kehilangan 30 poin bobot penilaian.',
+                  fix: 'Isi Bagian J dengan membandingkan suhu Sampel B (60°C) dan Sampel A (30°C), buktikan kesetaraan suhu pada Bagian K, lalu tulis kesimpulan di Bagian L dan refleksi di Bagian M.'
+                }
+              ],
+              teacherFeedback: 'Kemampuan berhitung konversi suhu kalian sudah sangat kuat (skor maksimal pada Kegiatan 3). Segera lengkapi Bagian J, K, L, dan M serta hapus tanda derajat pada Kelvin agar nilai naik melampaui KKM 80.',
+              recapNote: 'Hapus tanda derajat pada Kelvin (°K → K) serta kerjakan Bagian J (Analisis), K (Berpikir Kritis), L (Kesimpulan), dan M (Refleksi).'
+            },
+            {
+              id: 'vii3-khayla',
+              tabName: 'KHAYLA KURNIA PURNAMA SARI',
+              excluded: false,
+              studentIdentity: 'Khayla Kurnia Purnama Sari (Individu)',
+              members: ['Khayla Kurnia Purnama Sari'],
+              score: 80,
+              predicate: 'B',
+              status: 'TUNTAS',
+              studentAnswerSnippet: 'Bagian B, C, F, Latihan Tim (6 soal), J.2-J.4, K, L, M terisi sangat baik. Bagian H pengamatan Sampel A = 31°C dan Sampel B = 50°C terisi, namun tabel konversi ke °R, °F, K beserta langkah hitungnya kosong. Pada J.1 tertulis sampel bersuhu lebih tinggi adalah 31°C.',
+              rubricBreakdown: [
+                { aspect: 'Pemahaman Konsep & Titik Tetap (F)', max: 20, score: 20, note: 'Lengkap dan sesuai aturan penulisan satuan.' },
+                { aspect: 'Pengukuran & Konversi Sampel (H)', max: 25, score: 10, note: 'Data Celcius terisi, namun tabel konversi & langkah hitung kosong.' },
+                { aspect: 'Latihan Konversi Tim & Kuis (Keg. 3)', max: 25, score: 21, note: 'Langkah hitung benar, salah ketik 140°F di jawaban No. 2; kuis kosong.' },
+                { aspect: 'Analisis & Berpikir Kritis (J-K)', max: 20, score: 19, note: 'Analisis mendalam; perlu koreksi angka pada J.1.' },
+                { aspect: 'Kesimpulan & Refleksi (L-M)', max: 10, score: 10, note: 'Sangat runtut dan reflektif.' }
+              ],
+              errorTable: [
+                {
+                  part: 'Bagian H — Tabel & Langkah Konversi Sampel A & B',
+                  current: 'Sampel A = 31°C, Sampel B = 50°C (kolom °R, °F, K dan langkah hitung kosong).',
+                  explanation: 'Data hasil pengukuran Celcius belum dikonversi ke tiga skala termometer lainnya.',
+                  fix: 'Hitung konversi Sampel A (31°C = 24,8°R = 87,8°F = 304 K) dan Sampel B (50°C = 40°R = 122°F = 323 K) beserta langkahnya.'
+                },
+                {
+                  part: 'Bagian J.1 — Analisis Perbandingan Suhu',
+                  current: 'Sampel bersuhu lebih tinggi adalah 31°C.',
+                  explanation: 'Tidak konsisten dengan data pengamatan Bagian H karena 50°C (Sampel B) lebih tinggi daripada 31°C (Sampel A).',
+                  fix: 'Perbaiki menjadi: Sampel yang bersuhu lebih tinggi adalah Sampel B (50°C) dengan selisih 19°C lebih panas dari Sampel A (31°C).'
+                }
+              ],
+              teacherFeedback: 'Selamat Khayla, pemahaman konsep dan analisis kamu sangat baik dan telah mencapai KKM (80 — Tuntas). Lengkapi konversi Bagian H dan perbaiki angka pada J.1 untuk nilai optimal.',
+              recapNote: 'Isi konversi sampel A (31°C) & B (50°C) di Bagian H, perbaiki J.1 (50°C > 31°C), dan lengkapi Kuis Individu.'
+            }
+          ]
+        },
+        {
+          id: 'sub-vii4',
+          folderName: 'Kelas VII-4 — IPA',
+          docId: '17Z4X4wnISILKoWCk7OzOLO4l63DqItF3wXPpk76P0Fc',
+          docTitle: '7.4 Metode Ilmiah',
+          docUrl: 'https://docs.google.com/document/d/17Z4X4wnISILKoWCk7OzOLO4l63DqItF3wXPpk76P0Fc/edit',
+          kkm: 80,
+          rubricSummary: 'Card Sorting 8 Langkah Metode Ilmiah (50%) + Gallery Walk Penerapan Eksperimen (50%)',
+          tabs: [
+            {
+              id: 'vii4-pos',
+              tabName: 'POS',
+              excluded: true,
+              exclusionReason: 'Tab Pertama (Petunjuk Operasional)',
+              studentIdentity: 'Petunjuk Penggunaan LKPD Digital',
+              members: [],
+              score: null,
+              predicate: '-',
+              status: 'EXCLUDED',
+              studentAnswerSnippet: 'Petunjuk pengerjaan LKPD kolaboratif multi-tab.',
+              rubricBreakdown: [],
+              errorTable: [],
+              teacherFeedback: '',
+              recapNote: 'Tab pertama (POS) otomatis dikecualikan dari penilaian.'
+            },
+            {
+              id: 'vii4-nilai',
+              tabName: 'Nilai',
+              excluded: true,
+              exclusionReason: 'Tab Rekapitulasi Otomatis',
+              studentIdentity: 'Daftar 28 Siswa Kelas VII-4',
+              members: [],
+              score: null,
+              predicate: '-',
+              status: 'EXCLUDED',
+              studentAnswerSnippet: 'Tabel rekapitulasi nilai Metode Ilmiah kelas VII-4.',
+              rubricBreakdown: [],
+              errorTable: [],
+              teacherFeedback: '',
+              recapNote: 'Tab target sinkronisasi rekapitulasi kelas VII-4.'
+            },
+            {
+              id: 'vii4-kel3',
+              tabName: 'Kelompok 3=92',
+              excluded: false,
+              studentIdentity: 'Kelompok 3: M. Faqih Fakhrullah, Raka Putra Pratama, Althaf Fahrizi, Ahmad Reyhan',
+              members: ['M. Faqih Fakhrullah', 'Raka Putra Pratama', 'Althaf Fahrizi', 'Ahmad Reyhan'],
+              score: 92,
+              predicate: 'A',
+              status: 'TUNTAS',
+              studentAnswerSnippet: 'Card Sorting langkah 1-6 urut & akurat, namun No. 7 (Mengkomunikasikan hasil) dan No. 8 (Menarik Kesimpulan) terbalik. Gallery Walk pengaruh jenis air terhadap pertumbuhan kecambah sangat runtut dan jelas.',
+              rubricBreakdown: [
+                { aspect: 'Card Sorting (Urutan, Penjelasan & Contoh)', max: 50, score: 45, note: 'Langkah 1-6 sangat tepat; hanya posisi No. 7 dan No. 8 yang tertukar.' },
+                { aspect: 'Gallery Walk (Penerapan Eksperimen)', max: 50, score: 47, note: 'Rancangan percobaan kecambah sangat sistematis; tambahkan angka hasil ukur.' }
+              ],
+              errorTable: [
+                {
+                  part: 'Card Sorting & Gallery Walk — No. 7 dan No. 8',
+                  current: 'No. 7: Mengkomunikasikan hasil | No. 8: Menarik Kesimpulan',
+                  explanation: 'Dalam metode ilmiah, peneliti harus menarik kesimpulan dari analisis data terlebih dahulu sebelum mengomunikasikan hasilnya kepada orang lain.',
+                  fix: 'Tukar posisi keduanya menjadi No. 7: Menarik Kesimpulan, dan No. 8: Mengkomunikasikan Hasil.'
+                }
+              ],
+              teacherFeedback: 'Kinerja luar biasa (92 — Predikat A / Tuntas)! Hanya perlu menukar urutan langkah 7 dan 8 agar alur metode ilmiah baku sepenuhnya.',
+              recapNote: 'Tukar urutan langkah 7 (Menarik Kesimpulan) dan langkah 8 (Mengkomunikasikan Hasil).'
+            },
+            {
+              id: 'vii4-zahra',
+              tabName: '79=Zahra',
+              excluded: false,
+              studentIdentity: 'Aulia Zahra Ramadhani (Individu)',
+              members: ['Aulia Zahra Ramadhani'],
+              score: 67,
+              predicate: 'D',
+              status: 'REMEDIAL',
+              studentAnswerSnippet: 'Card Sorting: No. 6 dan No. 7 keduanya diisi Mengumpulkan dan Menganalisis Data sehingga kehilangan langkah Mengkomunikasikan Hasil, dan contoh diulang sama (Mengamati es mencair). Gallery Walk: percobaan pengaruh suhu air terhadap waktu pelarutan gula (10°C = 120 dtk, 40°C = 45 dtk, 80°C = 15 dtk) sangat bagus, hanya No. 4-5 dan No. 6-7 terbalik.',
+              rubricBreakdown: [
+                { aspect: 'Card Sorting (Urutan, Penjelasan & Contoh)', max: 50, score: 22, note: 'Langkah 6-7 duplikat, kehilangan Mengkomunikasikan hasil, contoh berulang.' },
+                { aspect: 'Gallery Walk (Penerapan Eksperimen)', max: 50, score: 45, note: 'Data kuantitatif waktu larut gula sangat kuat; rapikan urutan No. 4-7.' }
+              ],
+              errorTable: [
+                {
+                  part: 'Card Sorting — No. 6, No. 7 & Kolom Contoh (No. 3–8)',
+                  current: 'No. 6 & 7 sama-sama "Mengumpulkan dan Menganalisis Data"; contoh No. 3-8 diulang "Mengamati es mencair".',
+                  explanation: 'Terjadi duplikasi langkah analisis data sehingga tahapan Mengkomunikasikan Hasil hilang, dan contoh tidak disesuaikan dengan masing-masing tahap.',
+                  fix: 'Ubah No. 7 menjadi Menarik Kesimpulan dan No. 8 menjadi Mengkomunikasikan Hasil, serta sesuaikan contoh tiap baris (misal: hipotesis es mencair lebih cepat di suhu ruang).'
+                },
+                {
+                  part: 'Gallery Walk — Urutan No. 4–5 dan No. 6–7',
+                  current: 'No. 4 Melakukan Percobaan sebelum No. 5 Merancang; No. 6 Kesimpulan sebelum No. 7 Analisis Data.',
+                  explanation: 'Rancangan percobaan harus dibuat sebelum eksperimen dilakukan, dan data harus dianalisis sebelum menarik kesimpulan.',
+                  fix: 'Urutkan menjadi: (4) Merancang Percobaan → (5) Melakukan Percobaan → (6) Mengumpulkan & Menganalisis Data → (7) Menarik Kesimpulan → (8) Mengkomunikasikan Hasil.'
+                }
+              ],
+              teacherFeedback: 'Eksperimen mandiri kamu tentang kelarutan gula pada berbagai suhu (120 dtk, 45 dtk, 15 dtk) sangat ilmiah! Perbaiki bagian Card Sorting dan urutan Gallery Walk agar nilaimu naik melampaui KKM 80.',
+              recapNote: 'Perbaiki duplikasi Card Sorting No. 6–7, sesuaikan contoh tiap langkah, dan rapikan urutan Gallery Walk No. 4–7.'
+            },
+            {
+              id: 'vii4-hanifah',
+              tabName: 'Hanifah Nafisyah (Belum Mengumpulkan)',
+              excluded: false,
+              studentIdentity: 'Hanifah Nafisyah (Individu)',
+              members: ['Hanifah Nafisyah'],
+              score: 0,
+              predicate: 'D',
+              status: 'KOSONG',
+              studentAnswerSnippet: '',
+              rubricBreakdown: [
+                { aspect: 'Card Sorting (Urutan, Penjelasan & Contoh)', max: 50, score: 0, note: 'Belum ada jawaban yang dikumpulkan.' },
+                { aspect: 'Gallery Walk (Penerapan Eksperimen)', max: 50, score: 0, note: 'Belum ada jawaban yang dikumpulkan.' }
+              ],
+              errorTable: [
+                {
+                  part: 'Seluruh Lembar Kerja LKPD',
+                  current: '[Kosong / Belum mengumpulkan]',
+                  explanation: 'Siswa belum mengisi tab lembar kerja Metode Ilmiah.',
+                  fix: 'Segera lengkapi kegiatan Card Sorting (8 langkah metode ilmiah) dan Gallery Walk pada tab masing-masing agar dapat dikoreksi ulang otomatis oleh sistem.'
+                }
+              ],
+              teacherFeedback: 'Hanifah belum mengumpulkan LKPD Metode Ilmiah. Silakan segera kerjakan pada tab Google Docs agar sistem dapat langsung mengoreksi dan memperbarui nilaimu.',
+              recapNote: 'Belum mengumpulkan LKPD — segera kerjakan seluruh bagian Card Sorting dan Gallery Walk.'
+            }
+          ]
+        }
+      ]
+    };
+
+    // =========================================================================
+    // KODE GOOGLE APPS SCRIPT LENGKAP (SIAP DEPLOY WEB APP + TRIGGER HARIAN)
+    // =========================================================================
+    const GAS_SOURCE_CODE = `/**
+ * ============================================================================
+ * PORTAL OTOMATISASI KOREKSI & PENILAIAN LKPD MULTI-FOLDER GOOGLE DRIVE
+ * ============================================================================
+ * Fitur Utama:
+ * 1. Pemindaian rekursif seluruh subfolder & file Google Docs di Folder Induk:
+ *    https://drive.google.com/drive/folders/1rjmYpNU6PJjkhK0vyOV9BCADtTkVSiUL
+ * 2. Koreksi Ulang Harian Otomatis (Smart Upsert):
+ *    - Mengecualikan tab pertama (POS/Materi) serta tab acuan/rekap (RPP, LKPD, Contoh, Nilai).
+ *    - Membaca jawaban asli siswa di atas penanda koreksi, mengoreksi ulang via Gemini API,
+ *      dan memperbarui blok nilai + tabel penjelasan kesalahan tanpa duplikasi.
+ * 3. Penulisan otomatis rekapitulasi nilai & tindak lanjut ke Tab "Nilai" tiap Google Docs
+ *    sekaligus menyinkronkan ke Google Sheet Rekapitulasi Per Kelas.
+ * 4. Endpoint Web App (doGet & doPost) dengan XFrameOptionsMode.ALLOWALL agar dapat
+ *    disematkan (embed) di Google Sites dan dikontrol dari Portal Web.
+ */
+
+const CONFIG = {
+  ROOT_FOLDER_ID: '1rjmYpNU6PJjkhK0vyOV9BCADtTkVSiUL',
+  GEMINI_API_KEY: 'ISI_GEMINI_API_KEY_ANDA_DI_SINI',
+  GEMINI_MODEL: 'gemini-2.5-flash',
+  REKAP_SPREADSHEET_ID: '', // Kosongkan '' agar otomatis membuat Google Sheet baru di Folder Induk
+  KKM: 80,
+  SKIP_FIRST_TAB: true,
+  SKIP_FILE_KEYWORDS: ['rpp', 'materi', 'pos', 'contoh', 'template', 'master'],
+  SKIP_TAB_KEYWORDS: ['materi', 'pos', 'rpp', 'nilai', 'rekap', 'lkpd', 'contoh'],
+  MARKER_START: '=== HASIL KOREKSI, RUBRIK & UMPAN BALIK GURU ==='
+};
+
+/**
+ * 1. JALANKAN FUNGSI INI SEKALI UNTUK MEMASANG JADWAL KOREKSI OTOMATIS SETIAP HARI
+ */
+function pasangTriggerHarian() {
+  // Hapus trigger lama agar tidak ganda
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'jalankanKoreksiSeluruhFolder') {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+
+  // Jalankan otomatis setiap hari pukul 22:00 WIB
+  ScriptApp.newTrigger('jalankanKoreksiSeluruhFolder')
+    .timeBased()
+    .everyDays(1)
+    .atHour(22)
+    .create();
+
+  Logger.log('Trigger harian berhasil dipasang untuk pukul 22:00 setiap hari.');
+}
+
+/**
+ * 2. ENDPOINT WEB APP UNTUK GOOGLE SITES & PORTAL MONITORING
+ */
+function doGet(e) {
+  const action = (e && e.parameter && e.parameter.action) || 'status';
+
+  if (action === 'run') {
+    const summary = jalankanKoreksiSeluruhFolder();
+    return ContentService.createTextOutput(JSON.stringify({ ok: true, summary }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (action === 'data') {
+    const data = ambilDataRekapDariSheet();
+    return ContentService.createTextOutput(JSON.stringify({ ok: true, data }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Tampilan ringkas saat dibuka langsung atau di-embed di Google Sites
+  const html = HtmlService.createHtmlOutput(\`
+    <div style="font-family: Inter, Arial, sans-serif; padding: 24px; max-width: 900px; margin: auto;">
+      <h2 style="color: #1e1b4b;">Portal Otomatisasi Koreksi LKPD Multi-Folder Aktif</h2>
+      <p>Folder Induk: <code>\${CONFIG.ROOT_FOLDER_ID}</code> | KKM: <strong>\${CONFIG.KKM}</strong></p>
+      <p>Gunakan parameter <code>?action=data</code> untuk API JSON atau hubungkan URL Web App ini ke Portal Web di Google Sites Anda.</p>
+    </div>
+  \`).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+
+  return html;
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents || '{}');
+    if (body.action === 'runRegrade') {
+      const summary = jalankanKoreksiSeluruhFolder();
+      return ContentService.createTextOutput(JSON.stringify({ ok: true, summary }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'Aksi tidak dikenal' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * 3. MESIN UTAMA: PINDAI REKURSIF SUBFOLDER -> DOKUMEN -> SELURUH TAB -> REKAPITULASI
+ */
+function jalankanKoreksiSeluruhFolder() {
+  const rootFolder = DriveApp.getFolderById(CONFIG.ROOT_FOLDER_ID);
+  const ss = getOrCreateRekapSpreadsheet(rootFolder);
+  const logSummary = [];
+
+  pindaiFolderRekursif(rootFolder, rootFolder.getName(), ss, logSummary);
+
+  Logger.log('Selesai memproses ' + logSummary.length + ' tab.');
+  return logSummary;
+}
+
+function pindaiFolderRekursif(folder, pathKelas, ss, logSummary) {
+  // Proses seluruh Google Docs di folder saat ini
+  const files = folder.getFilesByType(MimeType.GOOGLE_DOCS);
+  while (files.hasNext()) {
+    const file = files.next();
+    if (isExcludedName(file.getName(), CONFIG.SKIP_FILE_KEYWORDS)) continue;
+
+    const hasilDokumen = prosesSatuDokumenMultiTab(file, pathKelas);
+    perbaruiTabNilaiDiDokumen(file.getId(), hasilDokumen);
+    sinkronKeGoogleSheetKelas(ss, pathKelas, file.getName(), hasilDokumen);
+    logSummary.push(...hasilDokumen);
+  }
+
+  // Telusuri seluruh subfolder di dalamnya secara rekursif
+  const subFolders = folder.getFolders();
+  while (subFolders.hasNext()) {
+    const sub = subFolders.next();
+    pindaiFolderRekursif(sub, sub.getName(), ss, logSummary);
+  }
+}
+
+function prosesSatuDokumenMultiTab(file, pathKelas) {
+  const doc = DocumentApp.openById(file.getId());
+  const tabs = typeof doc.getTabs === 'function' ? doc.getTabs() : [];
+  const hasilSemuaTab = [];
+
+  tabs.forEach((tab, idx) => {
+    const tabTitle = tab.getTitle();
+    if (CONFIG.SKIP_FIRST_TAB && idx === 0) return;
+    if (isExcludedName(tabTitle, CONFIG.SKIP_TAB_KEYWORDS)) return;
+
+    const docTab = tab.asDocumentTab();
+    if (!docTab) return;
+
+    const body = docTab.getBody();
+    // Ambil hanya jawaban asli siswa di atas penanda koreksi lama (Smart Upsert)
+    const jawabanAsliSiswa = hapusBlokKoreksiLamaDanAmbilTeks(body);
+
+    if (!jawabanAsliSiswa.trim()) {
+      hasilSemuaTab.push({
+        kelas: pathKelas,
+        namaFile: file.getName(),
+        namaTab: tabTitle,
+        identitas: tabTitle,
+        anggota: [tabTitle],
+        nilaiAkhir: 0,
+        predikat: 'D',
+        status: 'Remedial (Belum Mengumpulkan)',
+        ringkasanPerbaikan: 'Tab kosong — siswa belum mengisi lembar kerja.'
+      });
+      return;
+    }
+
+    const evaluasi = panggilGeminiKoreksi(file.getName(), tabTitle, jawabanAsliSiswa);
+    sisipkanBlokKoreksiKeBody(body, evaluasi);
+
+    hasilSemuaTab.push({
+      kelas: pathKelas,
+      namaFile: file.getName(),
+      namaTab: tabTitle,
+      identitas: evaluasi.identitas || tabTitle,
+      anggota: evaluasi.anggota_individu || [evaluasi.identitas || tabTitle],
+      nilaiAkhir: evaluasi.nilai_akhir || 0,
+      predikat: evaluasi.predikat || 'D',
+      status: (evaluasi.nilai_akhir || 0) >= CONFIG.KKM ? 'Tuntas' : 'Remedial',
+      ringkasanPerbaikan: evaluasi.ringkasan_perbaikan || '-'
+    });
+  });
+
+  doc.saveAndClose();
+  return hasilSemuaTab;
+}
+
+/**
+ * Menghapus blok koreksi dari hari sebelumnya (jika ada) agar pembaruan harian bersih tanpa duplikasi
+ */
+function hapusBlokKoreksiLamaDanAmbilTeks(body) {
+  const numChildren = body.getNumChildren();
+  let markerIndex = -1;
+
+  for (let i = 0; i < numChildren; i++) {
+    const child = body.getChild(i);
+    if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+      if (child.asParagraph().getText().indexOf(CONFIG.MARKER_START) !== -1) {
+        markerIndex = i;
+        break;
+      }
+    }
+  }
+
+  if (markerIndex !== -1) {
+    for (let j = numChildren - 1; j >= markerIndex; j--) {
+      body.removeChild(body.getChild(j));
+    }
+  }
+
+  return body.getText();
+}
+
+function panggilGeminiKoreksi(namaDokumen, namaTab, teksJawaban) {
+  const endpoint = \`https://generativelanguage.googleapis.com/v1beta/models/\${CONFIG.GEMINI_MODEL}:generateContent?key=\${CONFIG.GEMINI_API_KEY}\`;
+  const prompt = \`
+Koreksi dan nilai lembar kerja siswa berikut secara objektif (Skala 0-100, KKM = \${CONFIG.KKM}).
+Predikat: A (90-100), B (80-89), C (70-79), D (<70).
+Keluarkan JSON valid dengan struktur:
+{
+  "identitas": "Nama siswa atau daftar anggota kelompok",
+  "anggota_individu": ["Nama Siswa 1", "Nama Siswa 2"],
+  "nilai_akhir": 0,
+  "predikat": "D",
+  "rincian_rubrik": [{"aspek": "...", "skor_maks": 25, "skor": 0, "catatan": "..."}],
+  "tabel_kesalahan": [{
+    "bagian_no": "Bagian / No. Soal",
+    "jawaban_siswa": "Kutipan jawaban siswa",
+    "penjelasan_kesalahan": "Alasan ilmiah/matematis mengapa keliru",
+    "cara_perbaikan": "Langkah perbaikan yang benar"
+  }],
+  "umpan_balik_guru": "Motivasi & instruksi perbaikan bagi siswa",
+  "ringkasan_perbaikan": "Ringkasan padat 1-2 kalimat untuk tabel rekapitulasi"
+}
+
+Dokumen: \${namaDokumen} | Tab: \${namaTab}
+Jawaban Siswa:
+\${teksJawaban.substring(0, 28000)}
+\`;
+
+  const response = UrlFetchApp.fetch(endpoint, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
+    })
+  });
+
+  const json = JSON.parse(response.getContentText());
+  const raw = json.candidates[0].content.parts[0].text;
+  return JSON.parse(raw);
+}
+
+function sisipkanBlokKoreksiKeBody(body, ev) {
+  const waktu = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
+  const status = (ev.nilai_akhir || 0) >= CONFIG.KKM ? 'TUNTAS' : 'REMEDIAL';
+
+  body.appendParagraph('\\n' + CONFIG.MARKER_START).setHeading(DocumentApp.ParagraphHeading.HEADING2);
+  body.appendParagraph(\`Diperbarui Otomatis: \${waktu} WIB | Identitas: \${ev.identitas}\`);
+  body.appendParagraph(\`Nilai Akhir: \${ev.nilai_akhir}/100 | Predikat: \${ev.predikat} | Status: \${status} (KKM >= \${CONFIG.KKM})\`);
+
+  if (ev.rincian_rubrik && ev.rincian_rubrik.length) {
+    body.appendParagraph('1. Rincian Skor Rubrik').setHeading(DocumentApp.ParagraphHeading.HEADING3);
+    const rows = [['Aspek Penilaian', 'Skor Maks', 'Skor', 'Catatan']];
+    ev.rincian_rubrik.forEach(r => rows.push([r.aspek, String(r.skor_maks), String(r.skor), r.catatan]));
+    body.appendTable(rows);
+  }
+
+  if (ev.tabel_kesalahan && ev.tabel_kesalahan.length) {
+    body.appendParagraph('2. Tabel Penjelasan Kesalahan Jawaban & Cara Memperbaikinya').setHeading(DocumentApp.ParagraphHeading.HEADING3);
+    const errRows = [['Bagian / No. Soal', 'Jawaban Siswa Saat Ini', 'Penjelasan Kesalahan', 'Cara Perbaikan yang Benar']];
+    ev.tabel_kesalahan.forEach(e => errRows.push([e.bagian_no, e.jawaban_siswa, e.penjelasan_kesalahan, e.cara_perbaikan]));
+    body.appendTable(errRows);
+  }
+
+  body.appendParagraph('3. Umpan Balik & Tindak Lanjut Guru').setHeading(DocumentApp.ParagraphHeading.HEADING3);
+  body.appendParagraph(ev.umpan_balik_guru || '-');
+}
+
+function perbaruiTabNilaiDiDokumen(docId, hasilSemuaTab) {
+  const doc = DocumentApp.openById(docId);
+  if (typeof doc.getTabs !== 'function') return;
+
+  const tabNilai = doc.getTabs().find(t => t.getTitle().toLowerCase().includes('nilai'));
+  if (!tabNilai) return;
+
+  const body = tabNilai.asDocumentTab().getBody();
+  const marker = '=== REKAPITULASI KOREKSI OTOMATIS HARIAN ===';
+  hapusBlokDariPenanda(body, marker);
+
+  const waktu = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
+  body.appendParagraph('\\n' + marker).setHeading(DocumentApp.ParagraphHeading.HEADING2);
+  body.appendParagraph(\`Sinkronisasi Terakhir: \${waktu} WIB\`);
+
+  const tableData = [['Nama Tab', 'Identitas Siswa / Kelompok', 'Nilai', 'Predikat', 'Status', 'Tindak Lanjut Perbaikan']];
+  hasilSemuaTab.forEach(h => {
+    tableData.push([h.namaTab, h.identitas, String(h.nilaiAkhir), h.predikat, h.status, h.ringkasanPerbaikan]);
+  });
+  body.appendTable(tableData);
+  doc.saveAndClose();
+}
+
+function hapusBlokDariPenanda(body, markerText) {
+  const total = body.getNumChildren();
+  for (let i = 0; i < total; i++) {
+    const el = body.getChild(i);
+    if (el.getType() === DocumentApp.ElementType.PARAGRAPH && el.asParagraph().getText().indexOf(markerText) !== -1) {
+      for (let j = total - 1; j >= i; j--) body.removeChild(body.getChild(j));
+      break;
+    }
+  }
+}
+
+function getOrCreateRekapSpreadsheet(rootFolder) {
+  if (CONFIG.REKAP_SPREADSHEET_ID) {
+    return SpreadsheetApp.openById(CONFIG.REKAP_SPREADSHEET_ID);
+  }
+  const namaSheet = 'Rekapitulasi Nilai LKPD Otomatis - ' + rootFolder.getName();
+  const existing = rootFolder.getFilesByName(namaSheet);
+  if (existing.hasNext()) {
+    return SpreadsheetApp.openById(existing.next().getId());
+  }
+  const ss = SpreadsheetApp.create(namaSheet);
+  DriveApp.getFileById(ss.getId()).moveTo(rootFolder);
+  return ss;
+}
+
+function sinkronKeGoogleSheetKelas(ss, namaKelas, namaDokumen, hasilSemuaTab) {
+  const sheetName = namaKelas.substring(0, 30);
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) sheet = ss.insertSheet(sheetName);
+
+  sheet.clearContents();
+  sheet.appendRow(['NO', 'KELAS / FOLDER', 'DOKUMEN', 'NAMA SISWA', 'ASAL TAB', 'NILAI', 'PREDIKAT', 'STATUS (KKM >= 80)', 'TINDAK LANJUT PERBAIKAN', 'WAKTU UPDATE']);
+
+  const waktu = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy HH:mm');
+  let no = 1;
+  hasilSemuaTab.forEach(h => {
+    (h.anggota || [h.identitas]).forEach(namaSiswa => {
+      sheet.appendRow([no++, namaKelas, namaDokumen, namaSiswa, h.namaTab, h.nilaiAkhir, h.predikat, h.status, h.ringkasanPerbaikan, waktu]);
+    });
+  });
+}
+
+function isExcludedName(name, keywords) {
+  const lower = (name || '').toLowerCase();
+  return keywords.some(k => lower.includes(k));
+}`;
+
+    // =========================================================================
+    // INISIALISASI HALAMAN & RENDER UI
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('gasCodeBlock').textContent = GAS_SOURCE_CODE;
+      populateFolderFilters();
+      renderAllViews();
+      lucide.createIcons();
+    });
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const colors = {
+        success: 'bg-emerald-600 text-white',
+        warning: 'bg-amber-600 text-white',
+        error: 'bg-red-600 text-white',
+        info: 'bg-slate-900 text-white'
+      };
+      const el = document.createElement('div');
+      el.className = `${colors[type] || colors.info} px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+      el.textContent = msg;
+      container.appendChild(el);
+      requestAnimationFrame(() => el.classList.remove('translate-y-2', 'opacity-0'));
+      setTimeout(() => {
+        el.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => el.remove(), 300);
+      }, 3400);
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // =========================================================================
+    // NAVIGASI VIEW & MODE KONEKSI
+    // =========================================================================
+    function switchView(view) {
+      const views = {
+        dashboard: document.getElementById('viewDashboard'),
+        recap: document.getElementById('viewRecap'),
+        appscript: document.getElementById('viewAppScript')
+      };
+      const btns = {
+        dashboard: document.getElementById('tabBtnDashboard'),
+        recap: document.getElementById('tabBtnRecap'),
+        appscript: document.getElementById('tabBtnAppScript')
+      };
+
+      Object.keys(views).forEach(k => {
+        if (k === view) {
+          views[k].classList.remove('hidden');
+          btns[k].className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-indigo-700 shadow-2xs transition flex items-center gap-1.5';
+        } else {
+          views[k].classList.add('hidden');
+          btns[k].className = 'px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5';
+        }
+      });
+
+      if (view === 'recap') renderRecapSheetTable();
+      lucide.createIcons();
+    }
+
+    function setConnectionMode(mode) {
+      appState.mode = mode;
+      const simBtn = document.getElementById('modeSimBtn');
+      const gasBtn = document.getElementById('modeGasBtn');
+      const gasUrlBox = document.getElementById('gasUrlBox');
+
+      if (mode === 'simulation') {
+        simBtn.className = 'px-2.5 py-1 rounded-lg font-semibold bg-white text-slate-900 shadow-2xs transition';
+        gasBtn.className = 'px-2.5 py-1 rounded-lg font-semibold text-slate-600 hover:text-slate-900 transition';
+        gasUrlBox.classList.add('hidden');
+        showToast('Beralih ke Mode Pratinjau & Simulasi Live Multi-Folder.', 'info');
+      } else {
+        gasBtn.className = 'px-2.5 py-1 rounded-lg font-semibold bg-white text-indigo-700 shadow-2xs transition';
+        simBtn.className = 'px-2.5 py-1 rounded-lg font-semibold text-slate-600 hover:text-slate-900 transition';
+        gasUrlBox.classList.remove('hidden');
+        showToast('Masukkan URL Google Apps Script Web App (.../exec) Anda.', 'info');
+      }
+    }
+
+    async function connectAndFetchFromGAS() {
+      const url = document.getElementById('gasWebAppUrlInput').value.trim();
+      if (!url) {
+        showToast('Silakan isi URL Google Apps Script Web App terlebih dahulu.', 'warning');
+        return;
+      }
+      appState.gasWebAppUrl = url;
+      showToast('Menghubungkan ke Google Apps Script Web App...', 'info');
+      try {
+        const res = await fetch(`${url}?action=data`);
+        const json = await res.json();
+        if (json.ok) {
+          showToast('Berhasil terhubung dengan Google Apps Script Web App!', 'success');
+        } else {
+          showToast('Respon GAS diterima, periksa konfigurasi sheet.', 'warning');
+        }
+      } catch (err) {
+        showToast('Gagal menjangkau URL GAS (pastikan akses Web App diatur ke "Siapa saja").', 'error');
+      }
+    }
+
+    function updateScheduleTime(val) {
+      appState.scheduleTime = val;
+      document.getElementById('scheduleTimeBadge').textContent = val;
+      showToast(`Jadwal Trigger Harian diatur ke setiap hari pukul ${val}.`, 'success');
+    }
+
+    // =========================================================================
+    // RENDER DASHBOARD, KPI, POHON FOLDER & TABEL TAB
+    // =========================================================================
+    function populateFolderFilters() {
+      const selectDash = document.getElementById('filterFolderSelect');
+      const selectRecap = document.getElementById('recapClassFilter');
+      const optionsHtml = `<option value="ALL">Semua Subfolder / Kelas</option>` +
+        appState.folders.map(f => `<option value="${f.id}">${escapeHtml(f.folderName)} — ${escapeHtml(f.docTitle)}</option>`).join('');
+      selectDash.innerHTML = optionsHtml;
+      selectRecap.innerHTML = optionsHtml;
+    }
+
+    function renderAllViews() {
+      renderKPIs();
+      renderFolderTree();
+      renderTabsTable();
+      renderRecapSheetTable();
+      lucide.createIcons();
+    }
+
+    function renderKPIs() {
+      const allTabs = appState.folders.flatMap(f => f.tabs);
+      const gradedTabs = allTabs.filter(t => !t.excluded);
+      const excludedTabs = allTabs.filter(t => t.excluded);
+      const tuntasTabs = gradedTabs.filter(t => t.score >= 80);
+      const remedialTabs = gradedTabs.filter(t => t.score < 80);
+
+      const avg = gradedTabs.length > 0
+        ? (gradedTabs.reduce((acc, t) => acc + (t.score || 0), 0) / gradedTabs.length).toFixed(1).replace('.', ',')
+        : '0,0';
+      const tuntasPct = gradedTabs.length > 0 ? Math.round((tuntasTabs.length / gradedTabs.length) * 100) : 0;
+
+      document.getElementById('kpiSubfolders').textContent = `${appState.folders.length} Subfolder`;
+      document.getElementById('kpiDocsTabs').textContent = `${appState.folders.length} Docs / ${gradedTabs.length} Tab`;
+      document.getElementById('kpiExcludedTabs').textContent = `${excludedTabs.length} tab acuan/nilai dikecualikan`;
+      document.getElementById('kpiAverageScore').textContent = avg;
+      document.getElementById('kpiTuntas').textContent = `${tuntasTabs.length} Tab`;
+      document.getElementById('kpiTuntasPct').textContent = `${tuntasPct}% memenuhi KKM >= 80`;
+      document.getElementById('kpiRemedial').textContent = `${remedialTabs.length} Tab`;
+    }
+
+    function renderFolderTree() {
+      const container = document.getElementById('folderTreeContainer');
+      container.innerHTML = appState.folders.map(f => {
+        const activeCount = f.tabs.filter(t => !t.excluded).length;
+        const tuntasCount = f.tabs.filter(t => !t.excluded && t.score >= 80).length;
+
+        return `
+          <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <button onclick="document.getElementById('filterFolderSelect').value='${f.id}'; renderTabsTable();"
+                class="text-xs font-bold text-indigo-800 hover:underline flex items-center gap-1.5 text-left">
+                <i data-lucide="folder" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+                <span>${escapeHtml(f.folderName)}</span>
+              </button>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                ${tuntasCount}/${activeCount} Tuntas
+              </span>
+            </div>
+
+            <div class="pl-3 border-l-2 border-indigo-200 space-y-1">
+              <a href="${f.docUrl}" target="_blank" rel="noopener noreferrer"
+                class="text-[11px] font-semibold text-slate-700 hover:text-blue-600 flex items-center gap-1">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+                <span class="truncate">${escapeHtml(f.docTitle)}</span>
+              </a>
+              <div class="text-[10px] text-slate-500">
+                ${f.tabs.length} tab terdeteksi (Tab pertama &amp; Tab "Nilai" disinkronkan)
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTabsTable() {
+      const folderFilter = document.getElementById('filterFolderSelect').value;
+      const statusFilter = document.getElementById('filterStatusSelect').value;
+      const query = document.getElementById('searchTabInput').value.trim().toLowerCase();
+
+      const rows = [];
+      appState.folders.forEach(folder => {
+        if (folderFilter !== 'ALL' && folder.id !== folderFilter) return;
+
+        folder.tabs.forEach(tab => {
+          if (statusFilter === 'TUNTAS' && (tab.excluded || tab.score < 80)) return;
+          if (statusFilter === 'REMEDIAL' && (tab.excluded || tab.score >= 80 || tab.status === 'KOSONG')) return;
+          if (statusFilter === 'KOSONG' && tab.status !== 'KOSONG') return;
+          if (statusFilter === 'EXCLUDED' && !tab.excluded) return;
+
+          if (query) {
+            const hay = `${folder.folderName} ${folder.docTitle} ${tab.tabName} ${tab.studentIdentity} ${tab.recapNote}`.toLowerCase();
+            if (!hay.includes(query)) return;
+          }
+
+          rows.push({ folder, tab });
+        });
+      });
+
+      document.getElementById('tableResultCounter').textContent = `Menampilkan ${rows.length} tab`;
+      const tbody = document.getElementById('monitoringTableBody');
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-xs text-slate-500">Tidak ada tab yang sesuai dengan filter pencarian.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(({ folder, tab }) => {
+        let scoreHtml = `<span class="text-slate-400 font-medium">—</span>`;
+        let statusBadge = '';
+
+        if (tab.excluded) {
+          statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">${escapeHtml(tab.exclusionReason)}</span>`;
+        } else if (tab.status === 'KOSONG') {
+          scoreHtml = `<span class="font-extrabold text-red-600">0</span>`;
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800">Belum Mengumpulkan</span>`;
+        } else if (tab.score >= 80) {
+          scoreHtml = `<span class="font-extrabold text-emerald-600 text-sm">${tab.score}</span>`;
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">${tab.predicate} — Tuntas</span>`;
+        } else {
+          scoreHtml = `<span class="font-extrabold text-amber-600 text-sm">${tab.score}</span>`;
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">${tab.predicate} — Remedial</span>`;
+        }
+
+        return `
+          <tr onclick="openDetailDrawer('${folder.id}', '${tab.id}')" class="hover:bg-indigo-50/40 cursor-pointer transition align-top">
+            <td class="py-3 px-3.5">
+              <div class="font-bold text-slate-800 text-xs">${escapeHtml(folder.folderName)}</div>
+              <div class="text-[11px] text-slate-500 truncate max-w-[180px]">${escapeHtml(folder.docTitle)}</div>
+            </td>
+            <td class="py-3 px-3.5 font-bold text-indigo-700 text-xs">${escapeHtml(tab.tabName)}</td>
+            <td class="py-3 px-3.5 text-xs text-slate-800 font-medium">${escapeHtml(tab.studentIdentity)}</td>
+            <td class="py-3 px-3.5 text-center">${scoreHtml}</td>
+            <td class="py-3 px-3.5 text-center">${statusBadge}</td>
+            <td class="py-3 px-3.5 text-xs text-slate-600 leading-relaxed">${escapeHtml(tab.recapNote)}</td>
+            <td class="py-3 px-3.5 text-right">
+              <button onclick="event.stopPropagation(); openDetailDrawer('${folder.id}', '${tab.id}')"
+                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                <span>Detail</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // =========================================================================
+    // DRAWER DETAIL INJEKSI GOOGLE DOCS & SIMULASI REVISI JAWABAN OLEH SISWA
+    // =========================================================================
+    function openDetailDrawer(folderId, tabId) {
+      const folder = appState.folders.find(f => f.id === folderId);
+      const tab = folder?.tabs.find(t => t.id === tabId);
+      if (!folder || !tab) return;
+
+      appState.selectedTabId = tabId;
+      document.getElementById('drawerFolderBadge').textContent = folder.folderName;
+      document.getElementById('drawerDocBadge').textContent = folder.docTitle;
+      document.getElementById('drawerTabTitle').textContent = `Tab: ${tab.tabName}`;
+
+      const body = document.getElementById('drawerBodyContent');
+
+      if (tab.excluded) {
+        body.innerHTML = `
+          <div class="bg-slate-100 border border-slate-200 rounded-2xl p-6 text-center space-y-2">
+            <i data-lucide="shield-check" class="w-8 h-8 text-slate-600 mx-auto"></i>
+            <h4 class="text-sm font-bold text-slate-900">${escapeHtml(tab.exclusionReason)}</h4>
+            <p class="text-xs text-slate-600 max-w-md mx-auto">${escapeHtml(tab.recapNote)}</p>
+          </div>
+        `;
+        document.getElementById('detailDrawerOverlay').classList.remove('hidden');
+        lucide.createIcons();
+        return;
+      }
+
+      const isTuntas = tab.score >= 80;
+      body.innerHTML = `
+        <!-- Bagian A: Simulasi Jawaban Siswa (Bisa diedit untuk menguji Koreksi Ulang AI) -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5 text-indigo-600"></i>
+              <span>Simulasi Isi Jawaban Siswa di Google Docs (Uji Koreksi Ulang Harian)</span>
+            </label>
+            <button id="btnRegradeSingleTab" onclick="regradeSingleTabWithGemini('${folder.id}', '${tab.id}')"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-2xs transition">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>Koreksi Ulang Tab Ini via AI</span>
+            </button>
+          </div>
+          <textarea id="drawerStudentAnswerEditor" rows="4"
+            class="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="Simulasikan siswa memperbaiki jawabannya di sini, lalu klik Koreksi Ulang Tab Ini via AI...">${escapeHtml(tab.studentAnswerSnippet)}</textarea>
+          <p class="text-[11px] text-slate-500">
+            Saat siswa memperbarui jawabannya di Google Docs, sistem menghapus blok lama di bawah penanda <code class="bg-white px-1 border rounded">=== HASIL KOREKSI, RUBRIK &amp; UMPAN BALIK GURU ===</code> dan menggantinya dengan hasil terbaru.
+          </p>
+        </div>
+
+        <!-- Bagian B: Pratinjau Blok Injeksi di Bagian Bawah Tab Google Docs -->
+        <div class="border-2 border-dashed border-indigo-200 rounded-2xl p-4 sm:p-5 bg-white space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200">
+            <div>
+              <div class="text-[10px] font-mono font-bold text-indigo-600">=== HASIL KOREKSI, RUBRIK &amp; UMPAN BALIK GURU ===</div>
+              <h4 class="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">${escapeHtml(tab.studentIdentity)}</h4>
+            </div>
+            <div class="flex items-center gap-2.5 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
+              <div class="text-right">
+                <div class="text-[10px] font-semibold uppercase text-slate-500">Nilai Akhir</div>
+                <div class="text-xl font-extrabold ${isTuntas ? 'text-emerald-600' : 'text-amber-600'} leading-none">${tab.score}/100</div>
+              </div>
+              <div class="h-7 w-px bg-slate-200"></div>
+              <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${isTuntas ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                ${tab.predicate} — ${isTuntas ? 'TUNTAS' : 'REMEDIAL'}
+              </span>
+            </div>
+          </div>
+
+          <!-- 1. Tabel Rincian Skor Rubrik -->
+          <div class="space-y-1.5">
+            <h5 class="text-xs font-bold uppercase tracking-wider text-slate-700">1. Rincian Skor Rubrik Penilaian</h5>
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                    <th class="py-2 px-3 font-semibold">Aspek Penilaian</th>
+                    <th class="py-2 px-3 font-semibold text-center w-20">Maks</th>
+                    <th class="py-2 px-3 font-semibold text-center w-20">Skor</th>
+                    <th class="py-2 px-3 font-semibold">Catatan</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                  ${tab.rubricBreakdown.map(r => `
+                    <tr>
+                      <td class="py-2 px-3 font-semibold text-slate-800">${escapeHtml(r.aspect)}</td>
+                      <td class="py-2 px-3 text-center text-slate-500">${r.max}</td>
+                      <td class="py-2 px-3 text-center font-bold text-indigo-700">${r.score}</td>
+                      <td class="py-2 px-3 text-slate-600">${escapeHtml(r.note)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 2. Tabel 4 Kolom Penjelasan Kesalahan & Cara Memperbaikinya -->
+          <div class="space-y-1.5">
+            <h5 class="text-xs font-bold uppercase tracking-wider text-slate-700">2. Tabel Penjelasan Kesalahan Jawaban Tugas &amp; Cara Memperbaikinya</h5>
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-amber-50 text-amber-950 border-b border-amber-200">
+                    <th class="py-2 px-3 font-bold w-36">Bagian / No. Soal</th>
+                    <th class="py-2 px-3 font-bold w-1/4">Jawaban Siswa Saat Ini</th>
+                    <th class="py-2 px-3 font-bold w-1/4">Penjelasan Kesalahan</th>
+                    <th class="py-2 px-3 font-bold">Cara Perbaikan yang Benar</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                  ${tab.errorTable.length > 0 ? tab.errorTable.map(e => `
+                    <tr class="align-top">
+                      <td class="py-2 px-3 font-semibold text-slate-900">${escapeHtml(e.part)}</td>
+                      <td class="py-2 px-3 text-slate-600 italic bg-red-50/30">${escapeHtml(e.current)}</td>
+                      <td class="py-2 px-3 text-red-800">${escapeHtml(e.explanation)}</td>
+                      <td class="py-2 px-3 text-emerald-900 bg-emerald-50/30 font-medium">${escapeHtml(e.fix)}</td>
+                    </tr>
+                  `).join('') : `
+                    <tr><td colspan="4" class="py-3 px-3 text-center text-emerald-700 font-medium">Tidak ada kesalahan ditemukan. Jawaban sudah lengkap dan tepat!</td></tr>
+                  `}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 3. Umpan Balik & Tindak Lanjut Guru -->
+          <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3.5 space-y-1">
+            <h5 class="text-xs font-bold uppercase tracking-wider text-indigo-950">3. Umpan Balik &amp; Tindak Lanjut Guru</h5>
+            <p class="text-xs text-slate-800 leading-relaxed">${escapeHtml(tab.teacherFeedback)}</p>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('detailDrawerOverlay').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeDetailDrawer() {
+      document.getElementById('detailDrawerOverlay').classList.add('hidden');
+    }
+
+    // =========================================================================
+    // KOREKSI ULANG VIA GEMINI API (UNTUK SIMULASI REVISI JAWABAN SISWA)
+    // =========================================================================
+    async function regradeSingleTabWithGemini(folderId, tabId) {
+      const folder = appState.folders.find(f => f.id === folderId);
+      const tab = folder?.tabs.find(t => t.id === tabId);
+      if (!folder || !tab) return;
+
+      const updatedAnswer = document.getElementById('drawerStudentAnswerEditor').value.trim();
+      tab.studentAnswerSnippet = updatedAnswer;
+
+      const btn = document.getElementById('btnRegradeSingleTab');
+      const oldHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span>Memproses AI...</span>`;
+
+      try {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const prompt = `Anda adalah Guru IPA yang mengoreksi ulang tab LKPD Google Docs.
+Materi Dokumen: ${folder.docTitle} (${folder.rubricSummary})
+KKM = 80 (Predikat: A = 90-100, B = 80-89, C = 70-79, D = <70).
+Nama Tab: ${tab.tabName} | Identitas: ${tab.studentIdentity}
+Isi Jawaban Siswa Terbaru:
+${updatedAnswer || '(Kosong)'}`;
+
+        const payload = {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                score: { type: "NUMBER" },
+                rubricBreakdown: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      aspect: { type: "STRING" },
+                      max: { type: "NUMBER" },
+                      score: { type: "NUMBER" },
+                      note: { type: "STRING" }
+                    },
+                    required: ["aspect", "max", "score", "note"]
+                  }
+                },
+                errorTable: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      part: { type: "STRING" },
+                      current: { type: "STRING" },
+                      explanation: { type: "STRING" },
+                      fix: { type: "STRING" }
+                    },
+                    required: ["part", "current", "explanation", "fix"]
+                  }
+                },
+                teacherFeedback: { type: "STRING" },
+                recapNote: { type: "STRING" }
+              },
+              required: ["score", "rubricBreakdown", "errorTable", "teacherFeedback", "recapNote"]
+            }
+          }
+        };
+
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error('Respon kosong');
+
+        const parsed = JSON.parse(rawText);
+        const newScore = Math.round(Math.min(100, Math.max(0, Number(parsed.score) || 0)));
+
+        tab.score = newScore;
+        tab.predicate = newScore >= 90 ? 'A' : newScore >= 80 ? 'B' : newScore >= 70 ? 'C' : 'D';
+        tab.status = updatedAnswer === '' ? 'KOSONG' : (newScore >= 80 ? 'TUNTAS' : 'REMEDIAL');
+        tab.rubricBreakdown = parsed.rubricBreakdown;
+        tab.errorTable = parsed.errorTable;
+        tab.teacherFeedback = parsed.teacherFeedback;
+        tab.recapNote = parsed.recapNote;
+
+        renderAllViews();
+        openDetailDrawer(folderId, tabId);
+        showToast(`Koreksi ulang selesai! Nilai terbaru: ${newScore} (${tab.status}).`, 'success');
+      } catch (e) {
+        showToast('Gagal menghubungi Gemini API saat simulasi koreksi ulang.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+      }
+    }
+
+    // =========================================================================
+    // AKSI HEADER: JALANKAN KOREKSI ULANG HARIAN & SINKRONISASI GOOGLE SHEET
+    // =========================================================================
+    async function runDailyRegradeNow() {
+      if (appState.mode === 'gas' && appState.gasWebAppUrl) {
+        showToast('Mengirim perintah koreksi ulang seluruh folder ke Google Apps Script...', 'info');
+        try {
+          await fetch(`${appState.gasWebAppUrl}?action=run`);
+          showToast('Eksekusi koreksi ulang di Google Drive berhasil dipicu!', 'success');
+        } catch (e) {
+          showToast('Gagal memicu Web App GAS. Periksa URL Web App Anda.', 'error');
+        }
+        return;
+      }
+
+      const banner = document.getElementById('syncProgressBanner');
+      const fill = document.getElementById('syncProgressFill');
+      const label = document.getElementById('syncProgressLabel');
+      const btn = document.getElementById('btnRunRegrade');
+
+      banner.classList.remove('hidden');
+      btn.disabled = true;
+
+      const steps = [
+        { pct: 25, text: 'Memindai Folder Induk (1rjmYpNU6PJjkhK0vyOV9BCADtTkVSiUL) & subfolder kelas...' },
+        { pct: 55, text: 'Mengecualikan tab acuan (Materi, POS) & mengoreksi ulang seluruh tab siswa...' },
+        { pct: 85, text: 'Memperbarui blok rubrik & tabel perbaikan di tiap tab Google Docs (Smart Upsert)...' },
+        { pct: 100, text: 'Menyinkronkan rekapitulasi nilai ke Tab "Nilai" & Google Sheet...' }
+      ];
+
+      for (const step of steps) {
+        fill.style.width = step.pct + '%';
+        label.textContent = step.text;
+        await new Promise(r => setTimeout(r, 550));
+      }
+
+      const nowStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+      document.getElementById('lastSyncTimestamp').textContent = `Sync: ${nowStr}`;
+
+      setTimeout(() => {
+        banner.classList.add('hidden');
+        fill.style.width = '0%';
+        btn.disabled = false;
+        renderAllViews();
+        showToast('Koreksi ulang seluruh subfolder, dokumen & tab selesai disinkronkan!', 'success');
+      }, 400);
+    }
+
+    function syncToGoogleSheet() {
+      switchView('recap');
+      showToast('Rekapitulasi nilai seluruh kelas siap disinkronkan ke Google Sheet & Tab "Nilai".', 'success');
+    }
+
+    // =========================================================================
+    // RENDER REKAPITULASI GOOGLE SHEET & EKSPOR
+    // =========================================================================
+    function getFlattenedStudentRecords() {
+      const filterClass = document.getElementById('recapClassFilter')?.value || 'ALL';
+      const records = [];
+
+      appState.folders.forEach(folder => {
+        if (filterClass !== 'ALL' && folder.id !== filterClass) return;
+
+        folder.tabs.forEach(tab => {
+          if (tab.excluded) return;
+          const names = (tab.members && tab.members.length > 0) ? tab.members : [tab.studentIdentity];
+          names.forEach(studentName => {
+            records.push({
+              folderName: folder.folderName,
+              docTitle: folder.docTitle,
+              studentName: studentName.toUpperCase(),
+              tabName: tab.tabName,
+              score: tab.score ?? 0,
+              predicate: tab.predicate,
+              status: tab.status === 'KOSONG'
+                ? 'Remedial (Belum Mengumpulkan)'
+                : (tab.score >= 80 ? 'Tuntas' : 'Remedial'),
+              isTuntas: tab.score >= 80,
+              recapNote: tab.recapNote
+            });
+          });
+        });
+      });
+
+      return records;
+    }
+
+    function renderRecapSheetTable() {
+      const records = getFlattenedStudentRecords();
+      const tbody = document.getElementById('recapSheetTableBody');
+
+      if (records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-xs text-slate-500">Belum ada data rekapitulasi.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map((r, i) => `
+        <tr class="hover:bg-slate-50 align-top">
+          <td class="py-2.5 px-4 font-semibold text-slate-500">${i + 1}</td>
+          <td class="py-2.5 px-4 font-semibold text-indigo-800 text-xs">${escapeHtml(r.folderName)}</td>
+          <td class="py-2.5 px-4 font-bold text-slate-900">${escapeHtml(r.studentName)}</td>
+          <td class="py-2.5 px-4 text-xs text-slate-600">${escapeHtml(r.tabName)}</td>
+          <td class="py-2.5 px-4 text-center font-extrabold ${r.isTuntas ? 'text-emerald-600' : 'text-amber-600'}">${r.score}</td>
+          <td class="py-2.5 px-4 text-center font-bold text-slate-800">${r.predicate}</td>
+          <td class="py-2.5 px-4 text-center">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${r.isTuntas ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+              ${escapeHtml(r.status)}
+            </span>
+          </td>
+          <td class="py-2.5 px-4 text-xs text-slate-600">${escapeHtml(r.recapNote)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function copyRecapTableForDocs() {
+      const records = getFlattenedStudentRecords();
+      const html = `
+        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 10pt;">
+          <tr style="background-color: #eef2ff; font-weight: bold;">
+            <th>NO</th>
+            <th>KELAS</th>
+            <th>NAMA SISWA</th>
+            <th>ASAL TAB / KELOMPOK</th>
+            <th>NILAI</th>
+            <th>PREDIKAT</th>
+            <th>STATUS (KKM &ge; 80)</th>
+            <th>TINDAK LANJUT PERBAIKAN</th>
+          </tr>
+          ${records.map((r, i) => `
+            <tr>
+              <td align="center">${i + 1}</td>
+              <td>${escapeHtml(r.folderName)}</td>
+              <td>${escapeHtml(r.studentName)}</td>
+              <td>${escapeHtml(r.tabName)}</td>
+              <td align="center"><strong>${r.score}</strong></td>
+              <td align="center">${r.predicate}</td>
+              <td align="center">${escapeHtml(r.status)}</td>
+              <td>${escapeHtml(r.recapNote)}</td>
+            </tr>
+          `).join('')}
+        </table>
+      `;
+
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+      temp.style.position = 'fixed';
+      temp.style.left = '-9999px';
+      document.body.appendChild(temp);
+
+      const range = document.createRange();
+      range.selectNodeContents(temp);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      try { document.execCommand('copy'); } catch (e) {}
+      sel.removeAllRanges();
+      document.body.removeChild(temp);
+
+      showToast('Tabel rekapitulasi disalin! Siap ditempel (Ctrl+V) ke Tab "Nilai" Google Docs.', 'success');
+    }
+
+    function exportRecapCSV() {
+      const records = getFlattenedStudentRecords();
+      const headers = ['NO', 'KELAS', 'DOKUMEN', 'NAMA SISWA', 'ASAL TAB', 'NILAI', 'PREDIKAT', 'STATUS', 'TINDAK LANJUT PERBAIKAN'];
+      const rows = records.map((r, i) => [
+        i + 1,
+        `"${r.folderName.replace(/"/g, '""')}"`,
+        `"${r.docTitle.replace(/"/g, '""')}"`,
+        `"${r.studentName.replace(/"/g, '""')}"`,
+        `"${r.tabName.replace(/"/g, '""')}"`,
+        r.score,
+        r.predicate,
+        `"${r.status}"`,
+        `"${r.recapNote.replace(/"/g, '""')}"`
+      ]);
+
+      const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Rekap_Nilai_LKPD_MultiFolder.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('File CSV rekapitulasi nilai per kelas berhasil diunduh.', 'success');
+    }
+
+    function copyGasCode() {
+      const textarea = document.createElement('textarea');
+      textarea.value = GAS_SOURCE_CODE;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(textarea);
+      showToast('Kode lengkap Code.gs berhasil disalin ke clipboard!', 'success');
+    }
+  </script>
+</body>
+</html>
